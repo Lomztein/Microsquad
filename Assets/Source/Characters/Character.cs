@@ -1,0 +1,292 @@
+﻿using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
+
+public class Character : MonoBehaviour {
+
+	public enum Faction { Player, Corrupt, Newcomers, Scavengers }; // Just some factions, subject to change.
+
+	[Header ("Basics")]
+	public CharacterController character;
+	public Faction faction;
+	public string characterName;
+	public float speed;
+	public int health;
+
+	private Transform pointer;
+
+	[Header ("Stats")]
+	public CharacterStats stats;
+	private CharacterStats multipliers;
+
+	[Header ("Equipment")]
+	public CharacterEquipment equipment;
+	public Inventory inventory;
+	public List<Weapon> activeWeapons;
+
+	[Header ("Commands")]
+	public List<Command> commands = new List<Command>();
+	private Command currentCommand;
+
+	[Header ("Animation")]
+	public Animator animator;
+
+	/*void CombineStatBonuses () {
+		multipliers = new CharacterStats (1f, 1f, 1f);
+
+		List<CharacterEquipment.Armor> armor = new List<CharacterEquipment.Armor>();
+		armor.Add (equipment.headGear);
+		armor.Add (equipment.chestGear);
+		armor.Add (equipment.legGear);
+
+		for (int i = 0; i < armor.Count; i++) {
+			multipliers.strength *= armor[i].statBonuses.strength;
+			multipliers.accuracy *= armor[i].statBonuses.accuracy;
+			multipliers.speed *= armor[i].statBonuses.speed;
+		}
+	}*/
+	public void Start () {
+
+		animator.StartPlayback ();
+		animator.speed = 1f;
+
+		equipment.chestGear.character = this;
+		equipment.leftHand.character = this;
+		equipment.rightHand.character = this;
+		equipment.headGear.character = this;
+		equipment.legGear.character = this;
+
+		UpdateItem (equipment.rightHand);
+		UpdateItem (equipment.leftHand);
+		UpdateItem (equipment.headGear);
+		UpdateItem (equipment.chestGear);
+		UpdateItem (equipment.legGear);
+
+		GameObject p = new GameObject ("Pointer");
+		pointer = p.transform;
+		pointer.transform.position = transform.position;
+		pointer.parent = transform;
+	}
+
+	public float CalcDPS () {
+		float val = 0f;
+		for (int i = 0; i < activeWeapons.Count; i++) {
+			val += activeWeapons[i].CalcDPS ();
+		}
+		return val;
+	}
+
+	public Vector2 CalcOptics () {
+		Vector2 val = Vector2.zero;
+		for (int i = 0; i < activeWeapons.Count; i++) {
+			val += activeWeapons[i].GetOpticSpeed ();
+		}
+		return val;
+	}
+
+	public void ChangeEquipment (CharacterEquipment.Slot slotType, CharacterEquipment.Equipment slot, Item newItem) {
+		if (slotType != newItem.slotType)
+			return;
+
+		Item curItem = slot.item;
+		if ((slot == equipment.rightHand || slot == equipment.leftHand) &&
+		    (equipment.rightHand.item == equipment.leftHand.item)) {
+			
+			equipment.rightHand.item = null;
+			equipment.leftHand.item = null;
+		}
+
+		if (newItem.type == Item.Type.TwoHandTool) {
+			CharacterEquipment.Equipment otherSlot = equipment.rightHand;
+			if (slot == equipment.rightHand)
+				otherSlot = equipment.leftHand;
+
+			if (otherSlot.item != null && slot.item != null)
+				return;
+
+			slot.item = newItem;
+			otherSlot.item = newItem;
+		} else {
+			slot.item = newItem;
+			if (curItem)
+				PhysicalItem.Create (curItem, transform.position, Quaternion.identity);
+		}
+
+		UpdateItem (slot);
+	}
+
+	void UpdateItem (CharacterEquipment.Equipment slot) {
+		if (slot.item == null)
+			return;
+
+		if ((slot == equipment.rightHand || slot == equipment.leftHand) &&
+			(equipment.rightHand.item == equipment.leftHand.item) &&
+		    slot.item.type == Item.Type.TwoHandTool) {
+
+			if (equipment.rightHand.physicalItem) {
+				GameObject.Destroy (equipment.rightHand.physicalItem);
+			}
+
+			GameObject newTool = (GameObject)Instantiate (equipment.rightHand.item.gameObject, equipment.rightHand.transform.position, equipment.rightHand.transform.rotation);
+			PhysicalTool tool = newTool.GetComponent<PhysicalTool> ();
+			equipment.rightHand.physicalItem = tool.gameObject;
+			equipment.leftHand.physicalItem = tool.gameObject;
+			equipment.rightHand.tool = tool;
+			equipment.leftHand.tool = tool;
+			tool.transform.transform.parent = transform;
+		}else{
+			slot.Update ();
+		}
+	}
+
+	void FixedUpdate () {
+		SetNextCommand ();
+		transform.rotation = Quaternion.Slerp (transform.rotation, pointer.rotation, 20f * Time.fixedDeltaTime);
+	}
+
+	public void CompleteCommand () {
+		commands.Remove (currentCommand);
+		Destroy (currentCommand);
+		currentCommand = null;
+		animator.SetFloat ("Speed", 0);
+	}
+
+	public void AddCommand (Command command) {
+		commands.Add (command);
+	}
+
+	public void ClearCommands (Command command = null) {
+		StopAllCoroutines ();
+		for (int i = 0; i < commands.Count; i++)
+			Destroy (commands [i]);
+		commands.Clear ();
+		if (command != null)
+			AddCommand (command);
+	}
+
+	void EquipWeapon () {
+	}
+
+	void SetNextCommand () {
+		if (commands.Count == 0 || currentCommand != null)
+			return;
+
+		currentCommand = commands [0];
+		if (currentCommand.type == Command.Type.Move) {
+			StartCoroutine (DoMoveCommand ());
+		}
+		if (currentCommand.type == Command.Type.Kill) {
+			StartCoroutine (DoKillCommand ());
+		}
+	}
+
+	IEnumerator DoMoveCommand () {
+		while (currentCommand.target && Vector3.Distance (new Vector3 (currentCommand.target.position.x, transform.position.y, currentCommand.target.position.z), transform.position) > 0.5f) {
+
+			animator.SetFloat ("Speed", speed);
+			Vector3 dir = (new Vector3 (currentCommand.target.position.x, transform.position.y, currentCommand.target.position.z) - transform.position).normalized;
+			character.Move (transform.forward * speed * Time.fixedDeltaTime);
+			pointer.LookAt (new Vector3 (currentCommand.target.position.x, transform.position.y, currentCommand.target.position.z));
+			yield return new WaitForFixedUpdate ();
+
+		}
+		CompleteCommand ();
+	}
+
+	IEnumerator DoKillCommand () {
+		while (currentCommand.target) {
+			animator.SetFloat ("Speed", 0f);
+			pointer.LookAt (currentCommand.target);
+			foreach (Weapon w in activeWeapons) {
+				w.Fire (Faction.Corrupt, currentCommand.target);
+			}
+			yield return new WaitForFixedUpdate ();
+		}
+		CompleteCommand ();
+	}
+
+	public void OnEquip (CharacterEquipment.Equipment slot, GameObject equipment) {
+		Weapon wep = equipment.GetComponentInChildren<Weapon>();
+		if (wep) {
+			activeWeapons.Add (wep);
+			animator.SetInteger ("WeaponType", 1);
+		}
+	}
+
+	void OnTakeDamage (int d) {
+		health -= d;
+		if (health <= 0)
+			Destroy (gameObject);
+	}
+
+}
+
+[System.Serializable]
+public struct CharacterStats {
+	
+	public float strength;
+	public float accuracy;
+	public float speed;
+
+	public CharacterStats (float _strength = 1f, float _accuracy = 1f, float _speed = 1f) {
+		strength = _strength;
+		accuracy = _accuracy;
+		speed = _speed;
+	}
+	
+}
+
+[System.Serializable]
+public class CharacterEquipment {
+
+	public enum Slot { Hand, Head, Chest, Legs, None };
+	public CharacterEquipment.Tool rightHand;
+	public CharacterEquipment.Tool leftHand;
+	public CharacterEquipment.Armor headGear;
+	public CharacterEquipment.Armor chestGear;
+	public CharacterEquipment.Armor legGear;
+
+	[System.Serializable]
+	public class Equipment {
+
+		public Slot slot;
+		public Item item;
+		public GameObject physicalItem;
+		public Transform transform;
+
+		public Character character;
+
+		public virtual void Update () {
+		}
+
+	}
+
+	[System.Serializable]
+	public class Tool : Equipment {
+
+		public PhysicalTool tool;
+
+		public override void Update () {
+			if (physicalItem) {
+				GameObject.Destroy (physicalItem);
+			}
+
+			GameObject newTool = (GameObject)GameObject.Instantiate (item.gameObject, transform.position, transform.rotation);
+			PhysicalTool t = newTool.GetComponent<PhysicalTool> ();
+			physicalItem = t.gameObject;
+			physicalItem.transform.parent = transform;
+			tool = t;
+
+			newTool.SendMessage ("OnEquip", WeaponGenerator.cur.GenerateRandomWeaponData ());
+			character.OnEquip (this, newTool);
+		}
+
+	}
+
+	[System.Serializable]
+	public class Armor : Equipment {
+
+		public enum Position { Head, Chest, Legs };
+
+	}
+}
