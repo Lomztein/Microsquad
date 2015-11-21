@@ -4,30 +4,31 @@ using System.Collections.Generic;
 
 public class Squadmember : Character {
 
+	[Header ("Squadmember")]
 	public bool isSelected;
 	public Squad squad;
+	public GameObject selectedIndicator;
 
-	void OnMouseDown () {
-		isSelected = true;
+	public void ChangeSelection (bool select) {
+		if (select) {
+			if (!isSelected)
+				PlayerInput.selectedUnits.Add (this);
+		}else{
+			if (isSelected)
+				PlayerInput.selectedUnits.Remove (this);
+		}
+
+		isSelected = select;
+		selectedIndicator.SetActive (select);
 	}
 
-	void Update () {
-		if (Input.GetMouseButtonDown (1) && isSelected) {
-			Vector3 startPos = transform.position;
-			bool shiftPressed = Input.GetButton ("Shift");
-			if (commands.Count > 0 && shiftPressed)
-				startPos = commands[commands.Count - 1].position;
-
-			Vector3 pos = PlayerInput.worldMousePos + Vector3.up;
-			Debug.DrawLine (startPos, pos);
-			if (!Physics.Linecast (startPos, pos))
-				if (shiftPressed) {
-					Command.MoveCommand (startPos, pos, speed, this);
-			}else{
-				Debug.Log ("wat");
-				ClearCommands ();
-				Command.MoveCommand (startPos, pos, speed, this);
-			}
+	public override void FixedUpdate () {
+		base.FixedUpdate ();
+		if (Input.GetMouseButton (0)) {
+			if (PlayerInput.IsInsideSelector (new Vector3 (transform.position.x, 0f ,transform.position.z)))
+				ChangeSelection (true);
+			else if (!Input.GetButton ("Shift"))
+				ChangeSelection (false);
 		}
 	}
 }

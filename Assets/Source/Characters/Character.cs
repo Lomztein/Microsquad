@@ -2,22 +2,20 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class Character : MonoBehaviour {
+public class Character : Unit {
 
-	public enum Faction { Player, Corrupt, Newcomers, Scavengers }; // Just some factions, subject to change.
+	public enum State { Idle, Searching, Attacking, Fleeing, Aimless };
 
 	[Header ("Basics")]
 	public CharacterController character;
-	public Faction faction;
-	public string characterName;
 	public float speed;
-	public int health;
 
 	private Transform pointer;
 
 	[Header ("Stats")]
 	public CharacterStats stats;
 	private CharacterStats multipliers;
+	public float altitude;
 
 	[Header ("Equipment")]
 	public CharacterEquipment equipment;
@@ -27,9 +25,13 @@ public class Character : MonoBehaviour {
 	[Header ("Commands")]
 	public List<Command> commands = new List<Command>();
 	private Command currentCommand;
+	public Transform target;
+	public Vector3 targetPos;
+	public State state;
 
 	[Header ("Animation")]
 	public Animator animator;
+	public GameObject ragdoll;
 
 	/*void CombineStatBonuses () {
 		multipliers = new CharacterStats (1f, 1f, 1f);
@@ -45,6 +47,7 @@ public class Character : MonoBehaviour {
 			multipliers.speed *= armor[i].statBonuses.speed;
 		}
 	}*/
+
 	public void Start () {
 
 		animator.StartPlayback ();
@@ -115,6 +118,14 @@ public class Character : MonoBehaviour {
 		UpdateItem (slot);
 	}
 
+	float CalcWepWeight () {
+		float val = 0f;
+		for (int i = 0; i < activeWeapons.Count; i++) {
+			val += activeWeapons[i].combinedStats.weight;
+		}
+		return val;
+	}
+
 	void UpdateItem (CharacterEquipment.Equipment slot) {
 		if (slot.item == null)
 			return;
@@ -139,9 +150,71 @@ public class Character : MonoBehaviour {
 		}
 	}
 
-	void FixedUpdate () {
+	void ResetAltitude () {
+		Ray ray = new Ray (transform.position, Vector3.down);
+		RaycastHit hit;
+
+		if (Physics.Raycast (ray, out hit, Mathf.Infinity, Game.game.terrainLayer))
+		    transform.position = hit.point + Vector3.up * (altitude + 0.1f);
+	}
+
+	public virtual void FixedUpdate () {
 		SetNextCommand ();
-		transform.rotation = Quaternion.Slerp (transform.rotation, pointer.rotation, 20f * Time.fixedDeltaTime);
+		ResetAltitude ();
+
+		if (Vector3.Distance (transform.position, targetPos) > 0.5f)
+			transform.rotation = Quaternion.RotateTowards (transform.rotation, Quaternion.Euler (0f, pointer.eulerAngles.y, 0f), CalcOptics ().x * Time.fixedDeltaTime * stats.strength / CalcWepWeight ());
+		pointer.LookAt (targetPos);
+
+		if (target) {
+			//if (ObjectVisibleFromHeadbone (target))
+			    targetPos = target.position;
+
+			if (state == State.Attacking || state == State.Searching) {
+				if (Vector3.Distance (target.position, transform.position) < CalcOptics ().y) {
+					FireWeapons ();
+				}else{
+					MoveTowardsPosition (targetPos);
+				}
+			}
+		}else{
+			if (state == State.Attacking) {
+				CompleteCommand ();
+				state = State.Idle;
+			}else if (state == State.Idle) {
+				targetPos = transform.position;
+			}
+
+			if (Vector3.Distance (transform.position, targetPos) > 0.5f) {
+				MoveTowardsPosition (targetPos);
+			}else{
+				CompleteCommand ();
+			}
+		}
+	}
+
+	public bool ObjectVisibleFromHeadbone (Transform other) {
+		Transform head = equipment.headGear.transform;
+		Ray ray = new Ray (head.position, other.position - head.position);
+		RaycastHit hit;
+
+		Physics.Raycast (ray, out hit, ray.direction.magnitude);
+		if (hit.collider.transform == other)
+			return true;
+
+		return false;
+	}
+
+	void MoveTowardsPosition (Vector3 position) {
+		Vector3 dir = (position - transform.position).normalized;
+		character.Move (dir * speed * Time.deltaTime);
+	}
+
+	void FireWeapons () {
+		for (int i = 0; i < activeWeapons.Count; i++)
+			// Lol this actually worked.
+			if (transform.rotation == Quaternion.RotateTowards (transform.rotation, Quaternion.Euler (0f, pointer.eulerAngles.y, 0f), 5))
+				activeWeapons[i].Fire (faction, target);
 	}
 
 	public void CompleteCommand () {
@@ -173,36 +246,26 @@ public class Character : MonoBehaviour {
 
 		currentCommand = commands [0];
 		if (currentCommand.type == Command.Type.Move) {
-			StartCoroutine (DoMoveCommand ());
+			DoMoveCommand ();
 		}
 		if (currentCommand.type == Command.Type.Kill) {
-			StartCoroutine (DoKillCommand ());
+			DoKillCommand ();
 		}
 	}
 
-	IEnumerator DoMoveCommand () {
-		while (currentCommand.target && Vector3.Distance (new Vector3 (currentCommand.target.position.x, transform.position.y, currentCommand.target.position.z), transform.position) > 0.5f) {
-
-			animator.SetFloat ("Speed", speed);
-			Vector3 dir = (new Vector3 (currentCommand.target.position.x, transform.position.y, currentCommand.target.position.z) - transform.position).normalized;
-			character.Move (transform.forward * speed * Time.fixedDeltaTime);
-			pointer.LookAt (new Vector3 (currentCommand.target.position.x, transform.position.y, currentCommand.target.position.z));
-			yield return new WaitForFixedUpdate ();
-
+	void DoMoveCommand () {
+		if (currentCommand.target) {
+			target = currentCommand.target;
+			state = State.Attacking;
+		}else{
+			targetPos = currentCommand.position;
+			target = null;
+			state = State.Searching;
 		}
-		CompleteCommand ();
 	}
 
-	IEnumerator DoKillCommand () {
-		while (currentCommand.target) {
-			animator.SetFloat ("Speed", 0f);
-			pointer.LookAt (currentCommand.target);
-			foreach (Weapon w in activeWeapons) {
-				w.Fire (Faction.Corrupt, currentCommand.target);
-			}
-			yield return new WaitForFixedUpdate ();
-		}
-		CompleteCommand ();
+	void DoKillCommand () {
+		target = currentCommand.target;
 	}
 
 	public void OnEquip (CharacterEquipment.Equipment slot, GameObject equipment) {
@@ -213,10 +276,19 @@ public class Character : MonoBehaviour {
 		}
 	}
 
-	void OnTakeDamage (int d) {
-		health -= d;
-		if (health <= 0)
+	private bool isDead = false;
+	void OnTakeDamage (Damage d) {
+		health -= d.damage;
+		if (health <= 0 && !isDead) {
 			Destroy (gameObject);
+			GameObject r = (GameObject)Instantiate (ragdoll, transform.position, transform.rotation);
+			RagdollHandler rag = r.GetComponent<RagdollHandler>();
+			rag.OnTakeDamage (d);
+			isDead = true;
+
+			if (faction == Faction.Player)
+				Game.AddMessage ("Oh my god, they killed " + unitName + "!");
+		}
 	}
 
 }

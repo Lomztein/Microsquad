@@ -17,14 +17,16 @@ public class Command : ScriptableObject {
 	}
 
 	public static Command MoveCommand (Vector3 start, Vector3 end, Transform target, float speed, Character character) {
-		GameObject t = new GameObject ("MTarget");
-		t.tag = "CommandPointer";
-		t.transform.position = end;
-		t.transform.parent = target;
+		if (target) {
+			GameObject t = new GameObject ("MTarget");
+			t.tag = "CommandPointer";
+			t.transform.position = end;
+			t.transform.parent = target;
+		}
 		Command c = Command.CreateInstance <Command> ();
 		c.name = "Move: " + end.ToString ();
 		float d = Vector3.Distance (start, end);
-		c.target = t.transform;
+		c.target = target;
 		c.time = d / speed;
 		c.position = end;
 		c.type = Type.Move;

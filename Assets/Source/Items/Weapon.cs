@@ -11,6 +11,7 @@ public class Weapon : MonoBehaviour {
 	public WeaponBody body;
 	public WeaponStats combinedStats;
 	public Transform[] muzzles;
+	public WeaponBarrel[] barrels;
 	public List<WeaponPart> weaponParts;
 	public string parse;
 
@@ -53,7 +54,7 @@ public class Weapon : MonoBehaviour {
 		combinedStats = stats;
 	}
 
-	public void Fire (Character.Faction faction, Transform target) {
+	public void Fire (Faction faction, Transform target) {
 		if (chambered &&
 		    body.magazine.currentAmmo > 0) {
 			StartCoroutine (DoFire (faction, target));
@@ -66,9 +67,11 @@ public class Weapon : MonoBehaviour {
 		body.magazine.currentAmmo = body.magazine.maxAmmo;
 	}
 
-	IEnumerator DoFire (Character.Faction faction, Transform target) {
+	IEnumerator DoFire (Faction faction, Transform target) {
+
 		chambered = false;
 		float f = combinedStats.firerate / (float)muzzles.Length;
+
 		for (int i = 0; i < muzzles.Length; i++) {
 			for (int j = 0; j < combinedStats.bulletAmount; j++) {
 
@@ -76,6 +79,7 @@ public class Weapon : MonoBehaviour {
 				GameObject bul = (GameObject)Instantiate (body.bullet, muzzles[i].position, muzzles[i].rotation);
 				Projectile pro = bul.GetComponent<Projectile>();
 				FeedBulletData (pro, muzzles[i], faction);
+				barrels[i].Flash ();
 			}
 			body.magazine.currentAmmo--;
 			if (i != muzzles.Length - 1) yield return new WaitForSeconds (f);
@@ -87,7 +91,7 @@ public class Weapon : MonoBehaviour {
 		chambered = true;
 	}
 
-	void FeedBulletData (Projectile pro, Transform muzzle, Character.Faction faction) {
+	void FeedBulletData (Projectile pro, Transform muzzle, Faction faction) {
 
 		pro.velocity = muzzle.forward * Random.Range (0.9f, 1.1f) * combinedStats.speed * pro.speed
 			+ muzzle.up * Random.Range (-combinedStats.spread, combinedStats.spread)
@@ -95,6 +99,6 @@ public class Weapon : MonoBehaviour {
 
 		pro.damage = (int)combinedStats.damage;
 		pro.faction = faction;
-		pro.range = GetOpticSpeed ().y;
+		pro.range = GetOpticSpeed ().y * 1.5f;
 	}
 }

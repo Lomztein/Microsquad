@@ -49,10 +49,12 @@ public class WeaponBody : WeaponPart {
 		
 		if (barrelPrefab) {
 			weapon.muzzles = new Transform[barrelAttachmentPoint.Length];
+			weapon.barrels = new WeaponBarrel[barrelAttachmentPoint.Length];
 			for (int i = 0; i < barrelAttachmentPoint.Length; i++) {
 				GameObject b = (GameObject)Instantiate (barrelPrefab, barrelAttachmentPoint[i].position, Quaternion.identity);
 				barrel = b.GetComponent<WeaponBarrel>();
 				barrel.transform.parent = barrelAttachmentPoint[i];
+				weapon.barrels[i] = barrel;
 				weapon.muzzles[i] = barrel.muzzle;
 				weapon.weaponParts.Add (barrel);
 			}

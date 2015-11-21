@@ -6,6 +6,11 @@ public class Squad : MonoBehaviour {
 
 	public Inventory sharedInventory;
 	public List<Squadmember> members;
+	public static Squad activeSquad;
+
+	void OnEnable () {
+		activeSquad = this;
+	}
 
 	public void AddMember (Squadmember member) {
 		members.Add (member);

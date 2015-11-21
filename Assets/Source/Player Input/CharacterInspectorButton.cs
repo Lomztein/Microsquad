@@ -13,7 +13,7 @@ public class CharacterInspectorButton : MonoBehaviour {
 
 	// Use this for initialization
 	void Awake () {
-		if (inspector.character.faction != Character.Faction.Player) {
+		if (inspector.character.faction != Faction.Player) {
 			button.interactable = false;
 		}
 	}
