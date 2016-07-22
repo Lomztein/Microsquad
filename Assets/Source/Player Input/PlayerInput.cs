@@ -24,15 +24,17 @@ public class PlayerInput : MonoBehaviour {
 	private Vector3 mouseDragStart;
 	public Bounds selector;
 
-	[Header ("Tactical Pause")]
-	public static bool isTacticallyPaused;
+	[Header ("Tactical Slowdown")]
+	public static bool isTacticallySlowed;
 	public float slowdownTime;
-	public float defaultFixedDeltaTime = 0.02f;
+	public static float defaultFixedDeltaTime = 0.02f;
+	public float slowdownFactor = 0.01f;
 
 	// Use this for initialization
-	void Start () {
+	void Awake () {
 		camera = Camera.main;
 		cur = this;
+		defaultFixedDeltaTime = Time.fixedDeltaTime;
 	}
 
 	void DeselectAllUnits () {
@@ -49,9 +51,9 @@ public class PlayerInput : MonoBehaviour {
 				Time.fixedDeltaTime = defaultFixedDeltaTime * Time.timeScale;
 				yield return new WaitForEndOfFrame ();
 			}
-			Time.timeScale = 0f;
+			Time.timeScale = slowdownFactor;
 		}else{
-			while (Time.timeScale < 0.1f) {
+			while (Time.timeScale < 0.9f) {
 				Time.timeScale += 1f/slowdownTime * Time.unscaledDeltaTime;
 				Time.timeScale = Mathf.Clamp01 (Time.timeScale);
 				Time.fixedDeltaTime = defaultFixedDeltaTime * Time.timeScale;
@@ -59,14 +61,17 @@ public class PlayerInput : MonoBehaviour {
 			}
 			Time.timeScale = 1f;
 		}
-		isTacticallyPaused = enable;
+		Time.fixedDeltaTime = defaultFixedDeltaTime * Time.timeScale;
+		isTacticallySlowed = enable;
 	}
 	
 	// Update is called once per frame
 	void Update () {
 
-		if (Input.GetButtonDown ("Jump"))
-			StartCoroutine (ToggleTacticalPause (!isTacticallyPaused));
+		if (Input.GetButtonDown ("Jump")) {
+			StopCoroutine (ToggleTacticalPause (isTacticallySlowed));
+			StartCoroutine (ToggleTacticalPause (!isTacticallySlowed));
+		}
 
 		screenMousePos = Input.mousePosition;
 		timeSinceLastClick += Time.unscaledDeltaTime;
@@ -166,19 +171,21 @@ public class PlayerInput : MonoBehaviour {
 			for (int i = 0; i < selectedUnits.Count; i++) {
 
 				Squadmember member = selectedUnits[i];
-				Vector3 startPos = member.transform.position;
-				bool shiftPressed = Input.GetButton ("Shift");
+				if (member) {
+					Vector3 startPos = member.transform.position;
+					bool shiftPressed = Input.GetButton ("Shift");
 
-				if (member.commands.Count > 0 && shiftPressed)
-					startPos = member.commands[member.commands.Count - 1].position + Vector3.up;
-				
-				Vector3 pos = hit.point + positions[i] + Vector3.up;
-				Debug.DrawLine (startPos, pos);
-				if (!Physics.Linecast (startPos, pos, Game.game.terrainLayer)) {
-					if (!shiftPressed)
-						member.ClearCommands ();
-						
-					Command.MoveCommand (startPos, pos, member.speed, member);
+					if (member.commands.Count > 0 && shiftPressed)
+						startPos = member.commands[member.commands.Count - 1].position + Vector3.up;
+					
+					Vector3 pos = hit.point + positions[i] + Vector3.up;
+					Debug.DrawLine (startPos, pos);
+					if (!Physics.Linecast (startPos, pos, Game.game.terrainLayer)) {
+						if (!shiftPressed)
+							member.ClearCommands ();
+							
+						Command.MoveCommand (startPos, pos, member.speed, member);
+					}
 				}
 			}
 		}

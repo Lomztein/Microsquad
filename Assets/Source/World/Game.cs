@@ -24,6 +24,11 @@ public class Game : MonoBehaviour {
 	public LayerMask terrainLayer;
 	public int terrainLayerIndex;
 
+	[Header ("Settings")]
+	public static float soundVolume = 1f;
+	public static float musicVolume = 1f;
+	public static int pathfindingThreads = 4;
+
 	[Header ("Messages")]
 	public static List<string> messages = new List<string>();
 	public static List<float> messageTimes = new List<float>();
@@ -54,6 +59,12 @@ public class Game : MonoBehaviour {
 			messages.RemoveAt (messages.Count - 1);
 	}
 
+	public void SavePreferences () {
+		PlayerPrefs.SetFloat ("fSoundVolume", soundVolume);
+		PlayerPrefs.SetFloat ("fMusicVolume", musicVolume);
+		PlayerPrefs.SetInt ("iPathfindingThreads", pathfindingThreads);
+	}
+
 	void FixedUpdate () {
 		for (int i = 0; i < messages.Count; i++) {
 			messageTimes[i] -= Time.deltaTime;
@@ -67,6 +78,7 @@ public class Game : MonoBehaviour {
 
 	void Awake () {
 		game = this;
+		SavePreferences ();
 	}
 
 	void OnGUI () {

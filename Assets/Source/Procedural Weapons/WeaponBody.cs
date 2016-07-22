@@ -37,6 +37,10 @@ public class WeaponBody : WeaponPart {
 	private bool isBuild;
 	public AnimType animationType;
 
+	[Header ("Audio")]
+	public AudioSource audioSource;
+	public AudioClip fireSound;
+
 	public void BuildWeapon () {
 		// Yeah this is pretty shit. It'll do, though.
 

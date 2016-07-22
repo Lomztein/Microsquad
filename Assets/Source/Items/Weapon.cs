@@ -80,6 +80,9 @@ public class Weapon : MonoBehaviour {
 				Projectile pro = bul.GetComponent<Projectile>();
 				FeedBulletData (pro, muzzles[i], faction);
 				barrels[i].Flash ();
+
+				if (body.fireSound)
+					body.audioSource.PlayOneShot (body.fireSound, Game.soundVolume);
 			}
 			body.magazine.currentAmmo--;
 			if (i != muzzles.Length - 1) yield return new WaitForSeconds (f);

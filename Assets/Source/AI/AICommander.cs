@@ -31,7 +31,8 @@ public class AICommander : MonoBehaviour {
 			currentUnits.Add (ch);
 
 			int nearby = GetNearbyEnemyCount (objective.position, 10);
-			if (nearby < currentUnits.Count * threatCompensation) 
+			Debug.Log (nearby * threatCompensation + ", " + currentUnits.Count);
+			if (nearby * threatCompensation < currentUnits.Count && nearby != 0) 
 				FullAttackOnObjective (nearby);
 
 			if (nearby == 0 && currentUnits.Count > 10)
@@ -56,3 +57,4 @@ public class AICommander : MonoBehaviour {
 		return Physics.OverlapSphere (pos, range, Game.game.all - Game.FactionLayer (faction)).Length;
 	}
 }
+
