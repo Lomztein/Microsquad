@@ -33,13 +33,13 @@ public class CharacterAI : MonoBehaviour {
 	// Update is called once per frame
 	IEnumerator AIUpdate () {
 		while (enabled) {
-			FindTarget ();
+			yield return new WaitForSeconds (updateDeltaTime);
+            FindTarget ();
 			if (character.target) {
 				AttackTarget ();
 			}else{
 				character.state = Character.State.Searching;
 			}
-			yield return new WaitForSeconds (updateDeltaTime);
 		}
 	}
 
@@ -48,7 +48,7 @@ public class CharacterAI : MonoBehaviour {
 	}
 
 	void FindTarget () {
-		character.target = TargetFinder.FindTarget (transform, transform.position, character.CalcOptics ().y * 1.5f, Game.game.all - Game.game.layers[(int)character.faction]);
+		character.target = TargetFinder.FindTarget (transform, transform.position, character.CalcOptics ().y * 1.5f, Game.game.all - Game.game.layers[(int)character.faction], character);
 	}
 
 	void OnDrawGizmos () {
@@ -59,13 +59,13 @@ public class CharacterAI : MonoBehaviour {
 
 public class TargetFinder {
 
-	public static Transform FindTarget (Transform exclude, Vector3 start, float range, LayerMask layer) {
+	public static Transform FindTarget (Transform exclude, Vector3 start, float range, LayerMask layer, Character character) {
 		Collider[] nearby = Physics.OverlapSphere (start, range, layer);
 		Transform nearest = null;
 		float distance = float.MaxValue;
 
 		for (int i = 0; i < nearby.Length; i++) {
-			if (nearby[i].transform == exclude)
+			if (nearby[i].transform == exclude || !character.ObjectVisibleFromHeadbone (nearby[i].transform))
 				continue;
 
 			float d = Vector3.Distance (nearby[i].transform.position, start);

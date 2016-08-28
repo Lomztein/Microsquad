@@ -16,8 +16,8 @@ public class Game : MonoBehaviour {
 
 	[Header ("Layer Masks")]
 	public LayerMask all;
-	public LayerMask[] layers;
-	public int[] layerIndexes;
+    public LayerMask[] layers;
+    public int[] layerIndexes;
 	public Color[] factionColors;
 	public Material[] factionColorMaterials;
 
@@ -27,7 +27,6 @@ public class Game : MonoBehaviour {
 	[Header ("Settings")]
 	public static float soundVolume = 1f;
 	public static float musicVolume = 1f;
-	public static int pathfindingThreads = 4;
 
 	[Header ("Messages")]
 	public static List<string> messages = new List<string>();
@@ -62,7 +61,6 @@ public class Game : MonoBehaviour {
 	public void SavePreferences () {
 		PlayerPrefs.SetFloat ("fSoundVolume", soundVolume);
 		PlayerPrefs.SetFloat ("fMusicVolume", musicVolume);
-		PlayerPrefs.SetInt ("iPathfindingThreads", pathfindingThreads);
 	}
 
 	void FixedUpdate () {

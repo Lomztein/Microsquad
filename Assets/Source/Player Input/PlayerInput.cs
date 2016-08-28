@@ -147,17 +147,21 @@ public class PlayerInput : MonoBehaviour {
 		Vector3 movement = Vector3.zero;
 		if (screenMousePos.x < 5f) {
 			movement += Vector3.left;
-		} else if (screenMousePos.x > Screen.width - 5f) {
+		} else if (screenMousePos.x > Screen.width - 15f) {
 			movement += Vector3.right;
 		}
 
 		if (screenMousePos.y < 5f) {
 			movement += Vector3.back;
-		} else if (screenMousePos.y > Screen.height - 5f) {
+		} else if (screenMousePos.y > Screen.height - 15f) {
 			movement += Vector3.forward;
 		}
 
-		transform.position += Quaternion.Euler (0f, camera.transform.eulerAngles.y, 0f) * movement * sensitivity * Time.unscaledDeltaTime;
+        float hor = Input.GetAxis ("Horizontal");
+        float ver = Input.GetAxis ("Vertical");
+        movement += new Vector3 (hor, 0, ver);
+
+        transform.position += Quaternion.Euler (0f, camera.transform.eulerAngles.y, 0f) * movement * sensitivity * Time.unscaledDeltaTime;
 	}
 
 	public static bool IsInsideSelector (Vector3 position) {
@@ -180,12 +184,10 @@ public class PlayerInput : MonoBehaviour {
 					
 					Vector3 pos = hit.point + positions[i] + Vector3.up;
 					Debug.DrawLine (startPos, pos);
-					if (!Physics.Linecast (startPos, pos, Game.game.terrainLayer)) {
-						if (!shiftPressed)
-							member.ClearCommands ();
+					if (!shiftPressed)
+					    member.ClearCommands ();
 							
-						Command.MoveCommand (startPos, pos, member.speed, member);
-					}
+					Command.MoveCommand (startPos, pos, member.speed, member);
 				}
 			}
 		}

@@ -8,6 +8,7 @@ public class Character : Unit {
 
 	[Header ("Basics")]
 	public CharacterController character;
+    public NavMeshAgent navigationAgent;
 	public float speed;
 
 	private Transform pointer;
@@ -162,12 +163,12 @@ public class Character : Unit {
 		SetNextCommand ();
 		ResetAltitude ();
 
-		if (Vector3.Distance (transform.position, targetPos) > 0.5f)
-			transform.rotation = Quaternion.RotateTowards (transform.rotation, Quaternion.Euler (0f, pointer.eulerAngles.y, 0f), CalcOptics ().x * Time.fixedDeltaTime * stats.strength / CalcWepWeight ());
+		if (Vector3.Distance (transform.position, targetPos) > (speed + 0.1f) * Time.fixedDeltaTime)
+			transform.rotation = Quaternion.RotateTowards (transform.rotation, Quaternion.Euler (0f, pointer.eulerAngles.y, 0f), Time.fixedDeltaTime * stats.strength / CalcWepWeight () * 360f);
 		pointer.LookAt (targetPos);
 
 		if (target) {
-			//if (ObjectVisibleFromHeadbone (target))
+			if (ObjectVisibleFromHeadbone (target))
 			    targetPos = target.position;
 
 			if (state == State.Attacking || state == State.Searching) {
@@ -185,7 +186,7 @@ public class Character : Unit {
 				targetPos = transform.position;
 			}
 
-			if (Vector3.Distance (transform.position, targetPos) > 0.5f) {
+			if (Vector3.Distance (transform.position, targetPos) > (speed + 0.1f) * Time.fixedDeltaTime) {
 				MoveTowardsPosition (targetPos);
 			}else{
 				CompleteCommand ();
@@ -195,14 +196,16 @@ public class Character : Unit {
 
 	public bool ObjectVisibleFromHeadbone (Transform other) {
 		Transform head = equipment.headGear.transform;
-		Ray ray = new Ray (head.position, other.position - head.position);
+		Ray ray = new Ray (head.position, (other.position + Vector3.up * 1f) - head.position);
 		RaycastHit hit;
 
-		Physics.Raycast (ray, out hit, ray.direction.magnitude);
-		if (hit.collider.transform == other)
-			return true;
+        Debug.DrawLine (head.position, other.position);
+        float distance = Vector3.Distance (head.position, other.position);
 
-		return false;
+		if (Physics.SphereCast (ray, 0.15f, out hit, distance, Game.game.terrainLayer))
+			return false;
+
+		return true;
 	}
 
 	void MoveTowardsPosition (Vector3 position) {
@@ -224,8 +227,13 @@ public class Character : Unit {
 		animator.SetFloat ("Speed", 0);
 	}
 
-	public void AddCommand (Command command) {
-		commands.Add (command);
+    public void AddCommand ( Command command ) {
+        commands.Add (command);
+    }
+
+    public void AddCommand (List<Command> command) {
+        for (int i = 0; i < command.Count; i++)
+		    commands.Add (command[i]);
 	}
 
 	public void ClearCommands (Command command = null) {

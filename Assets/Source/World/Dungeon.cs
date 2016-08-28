@@ -44,6 +44,13 @@ public class Dungeon : MonoBehaviour {
 		int numRooms = 1;
 		int curChecks = 0;
 
+        for (int i = 0; i < roomPrefabs.Length; i++) {
+            NavMeshObstacle[] obstacles = roomPrefabs[i].GetComponentsInChildren<NavMeshObstacle> ();
+            for (int j = 0; j < obstacles.Length; j++) {
+                obstacles[j].carving = false;
+            }
+        }
+
 		GameObject bp = new GameObject ("BuildPointer");
 		Transform buildPointer = bp.transform;
 		
@@ -152,7 +159,12 @@ public class Dungeon : MonoBehaviour {
 			Destroy (door);
 			yield return new WaitForFixedUpdate ();
 		}
-	}
+
+        NavMeshObstacle[] obs = GetComponentsInChildren<NavMeshObstacle> ();
+        for (int j = 0; j < obs.Length; j++) {
+            obs[j].carving = true;
+        }
+    }
 
 	void OnDrawGizmos () {
 		Gizmos.DrawCube (currentBounds.center + Vector3.up * currentBounds.size.y / 2f, currentBounds.size);
