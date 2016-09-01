@@ -32,6 +32,10 @@ public class Squadmember : Character {
 		}
 	}
 
+    void OnDeath () {
+        ChangeSelection (false);
+    }
+
 	void OnDestroy () {
 		if (isSelected)
 			PlayerInput.selectedUnits.Remove (this);

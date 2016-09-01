@@ -32,30 +32,40 @@ public class RagdollHandler : MonoBehaviour {
 		Destroy (gameObject);
 	}
 
+    public void Ragdoll () {
+        Rigidbody[] bodies = GetComponentsInChildren<Rigidbody> ();
+        foreach (Rigidbody body in bodies) {
+            body.isKinematic = false;
+            body.GetComponent<Collider> ().enabled = true;
+        }
+    }
+
 	public void OnTakeDamage (Damage d) {
 		Vector3 point = d.point;
 
 		float dist = float.MaxValue;
 		int index = 0;
 
-		for (int i = 0; i < majorParts.Length; i++) {
-			float ld = Vector3.Distance (point, majorParts[i].part.transform.position);
+        if (majorParts.Length > 0) {
+            for (int i = 0; i < majorParts.Length; i++) {
+                float ld = Vector3.Distance (point, majorParts[i].part.transform.position);
 
-			if (ld > dist) {
-				ld = dist;
-				index = i;
-			}
-		}
+                if (ld > dist) {
+                    ld = dist;
+                    index = i;
+                }
+            }
 
-		majorParts[index].part.AddForceAtPosition (d.force, point);
-		if (majorParts[index].canDestroy && d.force.magnitude > dismembermentForce) {
-			majorParts[index].part.transform.localScale = Vector3.zero;
-		}
+            majorParts[index].part.AddForceAtPosition (d.force, point);
+            if (majorParts[index].canDestroy && d.force.magnitude > dismembermentForce) {
+                majorParts[index].part.transform.localScale = Vector3.zero;
+            }
 
-		ragdolls.Enqueue (this);
-		if (ragdolls.Count > maxRagdollsInScene) {
-			RagdollHandler h = ragdolls.Dequeue ();
-			h.StartCoroutine (h.Fade ());
-		}
+            ragdolls.Enqueue (this);
+            if (ragdolls.Count > maxRagdollsInScene) {
+                RagdollHandler h = ragdolls.Dequeue ();
+                h.StartCoroutine (h.Fade ());
+            }
+        }
 	}
 }

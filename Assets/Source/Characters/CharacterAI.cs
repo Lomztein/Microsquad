@@ -45,7 +45,7 @@ public class CharacterAI : MonoBehaviour {
                         if (character.target) {
                             AttackTarget ();
                         } else {
-                            character.state = Character.State.Searching;
+                            character.state = Character.State.Moving;
                         }
                         break;
                 }

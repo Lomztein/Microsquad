@@ -47,7 +47,7 @@ public class AICommander : MonoBehaviour {
 		for (int i = 0; i < currentUnits.Count; i++) {
 			if (i < amount * threatCompensation) {
 				currentUnits[i].targetPos = positions[i];
-				currentUnits[i].state = Character.State.Searching;
+				currentUnits[i].state = Character.State.Moving;
 				currentUnits.RemoveAt (i);
 			}
 		}

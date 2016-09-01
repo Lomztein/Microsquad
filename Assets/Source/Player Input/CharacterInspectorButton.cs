@@ -9,7 +9,7 @@ public class CharacterInspectorButton : MonoBehaviour {
 	public Button button;
 
 	public CharacterEquipment.Slot slot;
-	public Item.Type type;
+	public ItemPrefab.Type type;
 
 	// Use this for initialization
 	void Awake () {
@@ -20,7 +20,7 @@ public class CharacterInspectorButton : MonoBehaviour {
 
 	public void OnClick () {
 		Item i = Game.itemInHand.item;
-		if (slot == i.slotType) {
+		if (slot == i.prefab.slotType) {
 		}
 	}
 }

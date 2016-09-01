@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 public class Character : Unit {
 
-	public enum State { Idle, Searching, Attacking, Fleeing, Aimless };
+	public enum State { Idle, Moving, Attacking, Fleeing, Aimless };
 
 	[Header ("Basics")]
 	public CharacterController character;
@@ -34,7 +34,6 @@ public class Character : Unit {
 
 	[Header ("Animation")]
 	public Animator animator;
-	public GameObject ragdoll;
 
 	/*void CombineStatBonuses () {
 		multipliers = new CharacterStats (1f, 1f, 1f);
@@ -93,7 +92,7 @@ public class Character : Unit {
 	}
 
 	public void ChangeEquipment (CharacterEquipment.Slot slotType, CharacterEquipment.Equipment slot, Item newItem) {
-		if (slotType != newItem.slotType)
+		if (slotType != newItem.prefab.slotType)
 			return;
 
 		Item curItem = slot.item;
@@ -104,7 +103,7 @@ public class Character : Unit {
 			equipment.leftHand.item = null;
 		}
 
-		if (newItem.type == Item.Type.TwoHandTool) {
+		if (newItem.prefab.type == ItemPrefab.Type.TwoHandTool) {
 			CharacterEquipment.Equipment otherSlot = equipment.rightHand;
 			if (slot == equipment.rightHand)
 				otherSlot = equipment.leftHand;
@@ -137,13 +136,13 @@ public class Character : Unit {
 
 		if ((slot == equipment.rightHand || slot == equipment.leftHand) &&
 			(equipment.rightHand.item == equipment.leftHand.item) &&
-		    slot.item.type == Item.Type.TwoHandTool) {
+		    slot.item.prefab.type == ItemPrefab.Type.TwoHandTool) {
 
 			if (equipment.rightHand.physicalItem) {
 				GameObject.Destroy (equipment.rightHand.physicalItem);
 			}
 
-			GameObject newTool = (GameObject)Instantiate (equipment.rightHand.item.gameObject, equipment.rightHand.transform.position, equipment.rightHand.transform.rotation);
+			GameObject newTool = (GameObject)Instantiate (equipment.rightHand.item.prefab.gameObject, equipment.rightHand.transform.position, equipment.rightHand.transform.rotation);
 			PhysicalTool tool = newTool.GetComponent<PhysicalTool> ();
 			equipment.rightHand.physicalItem = tool.gameObject;
 			equipment.leftHand.physicalItem = tool.gameObject;
@@ -167,26 +166,38 @@ public class Character : Unit {
 		SetNextCommand ();
 		ResetAltitude ();
 
-        if (faction == Faction.Player)
-            Debug.Log (Vector3.Distance (transform.position ,NextPathPosition ()));
-		if (Vector3.Distance (transform.position, NextPathPosition ()) > (speed + 0.1f) * Time.fixedDeltaTime)
+		if (Vector3.Distance (transform.position, targetPos) > (speed + 0.1f) * Time.fixedDeltaTime)
 			transform.rotation = Quaternion.RotateTowards (transform.rotation, Quaternion.Euler (0f, pointer.eulerAngles.y, 0f), Time.fixedDeltaTime * stats.strength / CalcWepWeight () * 360f);
-		pointer.LookAt (NextPathPosition ());
+		pointer.LookAt (targetPos);
 
 		if (target) {
 
-			if (state == State.Attacking || state == State.Searching) {
+			if (state == State.Attacking) {
 				if (ObjectVisibleFromHeadbone (target) && Vector3.Distance (target.position, transform.position) < CalcOptics ().y) {
-					FireWeapons ();
+                    targetPos = target.position;
+                    pathIndex = 1;
+                    FireWeapons ();
 				}else{
+                    targetPos = NextPathPosition ();
 					MoveTowardsCommand ();
-				}
+                }
 			}
 
-            if ((pathToCommand == null && pathToCommand.corners.Length > 0) || Vector3.Distance (targetPos, pathToCommand.corners[pathToCommand.corners.Length - 1]) > 1f)
-                FindPathToCommand ();
 
-		}else{
+            if (pathToCommand == null && pathToCommand.corners.Length > 0) {
+
+                Vector3 t = new Vector3 (targetPos.x, 0f, targetPos.z);
+                Vector3 d = new Vector3 (pathToCommand.corners[pathToCommand.corners.Length - 1].x, 0f, pathToCommand.corners[pathToCommand.corners.Length - 1].z);
+
+                if (Vector3.Distance (t, d) > 0.1f) {
+                    FindPathToCommand ();
+                }
+            }
+
+            if (target.tag == "DeadCharacter")
+                target = null;
+
+        } else{
 			if (state == State.Attacking) {
 				CompleteCommand ();
 				state = State.Idle;
@@ -212,7 +223,7 @@ public class Character : Unit {
 
     private Vector3 NextPathPosition () {
 
-        if (pathToCommand != null && pathToCommand.corners.Length > 1) {
+        if (pathToCommand != null && pathToCommand.corners.Length > 0) {
             return pathToCommand.corners[pathIndex];
         }else {
             if (commands.Count == 0) {
@@ -221,6 +232,11 @@ public class Character : Unit {
                 return commands[0].GetPosition ();
             }
         }
+    }
+
+    private void ClearPathfindingAgent () {
+        if (pathToCommand.corners.Length != 0)
+            pathToCommand.ClearCorners ();
     }
 
 	public bool ObjectVisibleFromHeadbone (Transform other) {
@@ -260,7 +276,8 @@ public class Character : Unit {
 		Destroy (currentCommand);
 		currentCommand = null;
 		animator.SetFloat ("Speed", 0);
-        pathToCommand.ClearCorners ();
+        ClearPathfindingAgent ();
+        state = State.Idle;
 	}
 
     public void AddCommand ( Command command ) {
@@ -300,7 +317,7 @@ public class Character : Unit {
 	void DoMoveCommand () {
 	    targetPos = currentCommand.position;
 		target = null;
-		state = State.Searching;
+		state = State.Moving;
         FindPathToCommand ();
 	}
 
@@ -322,16 +339,28 @@ public class Character : Unit {
 	void OnTakeDamage (Damage d) {
 		health -= d.damage;
 		if (health <= 0 && !isDead) {
-			Destroy (gameObject);
-			GameObject r = (GameObject)Instantiate (ragdoll, transform.position, transform.rotation);
-			RagdollHandler rag = r.GetComponent<RagdollHandler>();
-			rag.OnTakeDamage (d);
-			isDead = true;
-
-			if (faction == Faction.Player)
-				Game.AddMessage ("Oh my god, they killed " + unitName + "!");
+            Die (d);
 		}
 	}
+
+    private void Die (Damage d) {
+        RagdollHandler rag = GetComponent<RagdollHandler> ();
+        rag.Ragdoll ();
+        rag.OnTakeDamage (d);
+        isDead = true;
+
+        Component[] components = GetComponents<Component> ();
+        for (int i = 0; i < components.Length; i++) {
+            if ((components[i] as Transform) == null)
+                Destroy (components[i]);
+        }
+
+        if (faction == Faction.Player)
+            Game.AddMessage ("Oh my god, they killed " + unitName + "!");
+
+        tag = "DeadCharacter";
+        BroadcastMessage ("OnDeath");
+    }
 
     void OnDrawGizmos () {
         if (commands.Count > 0) Gizmos.DrawLine (transform.position, commands[0].position);
@@ -393,7 +422,7 @@ public class CharacterEquipment {
 				GameObject.Destroy (physicalItem);
 			}
 
-			GameObject newTool = (GameObject)GameObject.Instantiate (item.gameObject, transform.position, transform.rotation);
+			GameObject newTool = (GameObject)GameObject.Instantiate (item.prefab.gameObject, transform.position, transform.rotation);
 			PhysicalTool t = newTool.GetComponent<PhysicalTool> ();
 			physicalItem = t.gameObject;
 			physicalItem.transform.parent = transform;
