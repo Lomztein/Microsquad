@@ -9,4 +9,17 @@ public class Utility : MonoBehaviour {
 
 		return (point - center).normalized * radius;
 	}
+
+    public static bool LineOfSight (Vector3 start, Vector3 end) {
+        Ray ray = new Ray (start, end - start);
+        RaycastHit hit;
+
+        Debug.DrawLine (start, end);
+        float distance = Vector3.Distance (start, end);
+
+        if (Physics.SphereCast (ray, 0.15f, out hit, distance, Game.game.terrainLayer))
+            return false;
+
+        return true;
+    }
 }

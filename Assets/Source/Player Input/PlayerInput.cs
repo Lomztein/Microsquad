@@ -28,7 +28,7 @@ public class PlayerInput : MonoBehaviour {
 	public static bool isTacticallySlowed;
 	public float slowdownTime;
 	public static float defaultFixedDeltaTime = 0.02f;
-	public float slowdownFactor = 0.01f;
+	public float slowdownFactor = 0.1f;
 
 	// Use this for initialization
 	void Awake () {
@@ -44,20 +44,23 @@ public class PlayerInput : MonoBehaviour {
 	}
 
 	IEnumerator ToggleTacticalPause (bool enable) {
-		if (enable) {
-			while (Time.timeScale > 0.1f) {
-				Time.timeScale -= 1f/slowdownTime * Time.unscaledDeltaTime;
-				Time.timeScale = Mathf.Clamp01 (Time.timeScale);
+        float modifier = 1f / slowdownTime * Time.unscaledDeltaTime;
+
+        if (enable) {
+			while (Time.timeScale - modifier > slowdownFactor) {
+
+                Time.timeScale = Mathf.Max (slowdownFactor, Time.timeScale - modifier);
 				Time.fixedDeltaTime = defaultFixedDeltaTime * Time.timeScale;
-				yield return new WaitForEndOfFrame ();
+
+				yield return new WaitForFixedUpdate ();
 			}
 			Time.timeScale = slowdownFactor;
 		}else{
-			while (Time.timeScale < 0.9f) {
-				Time.timeScale += 1f/slowdownTime * Time.unscaledDeltaTime;
-				Time.timeScale = Mathf.Clamp01 (Time.timeScale);
+			while (Time.timeScale + modifier < 1 - slowdownFactor) {
+
+                Time.timeScale = Mathf.Min (1, Time.timeScale + modifier);
 				Time.fixedDeltaTime = defaultFixedDeltaTime * Time.timeScale;
-				yield return new WaitForEndOfFrame ();
+				yield return new WaitForFixedUpdate ();
 			}
 			Time.timeScale = 1f;
 		}
@@ -69,7 +72,6 @@ public class PlayerInput : MonoBehaviour {
 	void Update () {
 
 		if (Input.GetButtonDown ("Jump")) {
-			StopCoroutine (ToggleTacticalPause (isTacticallySlowed));
 			StartCoroutine (ToggleTacticalPause (!isTacticallySlowed));
 		}
 
@@ -168,23 +170,28 @@ public class PlayerInput : MonoBehaviour {
 		return PlayerInput.cur.selector.Contains (position);
 	}
 
+    private Vector3 GetCommandStartPos (Squadmember member) {
+        Vector3 startPos = member.transform.position;
+        if (member.commands.Count > 0 && Input.GetButton ("Shift"))
+            startPos = member.commands[member.commands.Count - 1].position + Vector3.up;
+
+        return startPos;
+    }
+
 	void OrderUnits (RaycastHit hit, Unit unit) {
-		// Figure out whatever was clicked.
-		if (hit.collider.gameObject.layer == Game.game.terrainLayerIndex) {
+        // Figure out whatever was clicked.
+
+        if (hit.collider.gameObject.layer == Game.game.terrainLayerIndex) {
 			Vector3[] positions = Micromanagement.GetSpriralPositions (1.5f, selectedUnits.Count);
 			for (int i = 0; i < selectedUnits.Count; i++) {
 
 				Squadmember member = selectedUnits[i];
 				if (member) {
-					Vector3 startPos = member.transform.position;
-					bool shiftPressed = Input.GetButton ("Shift");
-
-					if (member.commands.Count > 0 && shiftPressed)
-						startPos = member.commands[member.commands.Count - 1].position + Vector3.up;
+                    Vector3 startPos = GetCommandStartPos (member);
 					
 					Vector3 pos = hit.point + positions[i] + Vector3.up;
 					Debug.DrawLine (startPos, pos);
-					if (!shiftPressed)
+					if (!Input.GetButton ("Shift"))
 					    member.ClearCommands ();
 							
 					Command.MoveCommand (startPos, pos, member.speed, member);
@@ -195,12 +202,13 @@ public class PlayerInput : MonoBehaviour {
 		if (unit) {
 			for (int i = 0; i < selectedUnits.Count; i++) {
 				Squadmember member = selectedUnits[i];
+                Vector3 startPos = GetCommandStartPos (member);
 
-				if (unit.faction != Faction.Player) {
+                if (unit.faction != Faction.Player) {
 					if (!Input.GetButton ("Shift"))
 						member.ClearCommands ();
 
-					Command.MoveCommand (member.transform.position, unit.transform.position, unit.transform, member.speed, member);
+					Command.KillCommand (startPos, unit.transform, member.CalcOptics ().y, member.speed, member, member.CalcDPS (), unit.health);
 				}
 			}
 		}

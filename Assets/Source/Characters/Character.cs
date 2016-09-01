@@ -29,6 +29,8 @@ public class Character : Unit {
 	public Transform target;
 	public Vector3 targetPos;
 	public State state;
+    public NavMeshPath pathToCommand;
+    public int pathIndex;
 
 	[Header ("Animation")]
 	public Animator animator;
@@ -70,6 +72,8 @@ public class Character : Unit {
 		pointer = p.transform;
 		pointer.transform.position = transform.position;
 		pointer.parent = transform;
+
+        navigationAgent = GetComponent<NavMeshAgent> ();
 	}
 
 	public float CalcDPS () {
@@ -163,21 +167,25 @@ public class Character : Unit {
 		SetNextCommand ();
 		ResetAltitude ();
 
-		if (Vector3.Distance (transform.position, targetPos) > (speed + 0.1f) * Time.fixedDeltaTime)
+        if (faction == Faction.Player)
+            Debug.Log (Vector3.Distance (transform.position ,NextPathPosition ()));
+		if (Vector3.Distance (transform.position, NextPathPosition ()) > (speed + 0.1f) * Time.fixedDeltaTime)
 			transform.rotation = Quaternion.RotateTowards (transform.rotation, Quaternion.Euler (0f, pointer.eulerAngles.y, 0f), Time.fixedDeltaTime * stats.strength / CalcWepWeight () * 360f);
-		pointer.LookAt (targetPos);
+		pointer.LookAt (NextPathPosition ());
 
 		if (target) {
-			if (ObjectVisibleFromHeadbone (target))
-			    targetPos = target.position;
 
 			if (state == State.Attacking || state == State.Searching) {
-				if (Vector3.Distance (target.position, transform.position) < CalcOptics ().y) {
+				if (ObjectVisibleFromHeadbone (target) && Vector3.Distance (target.position, transform.position) < CalcOptics ().y) {
 					FireWeapons ();
 				}else{
-					MoveTowardsPosition (targetPos);
+					MoveTowardsCommand ();
 				}
 			}
+
+            if ((pathToCommand == null && pathToCommand.corners.Length > 0) || Vector3.Distance (targetPos, pathToCommand.corners[pathToCommand.corners.Length - 1]) > 1f)
+                FindPathToCommand ();
+
 		}else{
 			if (state == State.Attacking) {
 				CompleteCommand ();
@@ -186,13 +194,34 @@ public class Character : Unit {
 				targetPos = transform.position;
 			}
 
-			if (Vector3.Distance (transform.position, targetPos) > (speed + 0.1f) * Time.fixedDeltaTime) {
-				MoveTowardsPosition (targetPos);
-			}else{
-				CompleteCommand ();
-			}
-		}
-	}
+            MoveTowardsCommand ();
+        }
+    }
+
+    private void MoveTowardsCommand () {
+        if (pathToCommand != null) {
+            if (Vector3.Distance (transform.position, NextPathPosition ()) > (speed + 0.1f) * Time.fixedDeltaTime) {
+                MoveTowardsPosition (NextPathPosition ());
+            } else {
+                pathIndex++;
+                if (pathIndex == pathToCommand.corners.Length)
+                    CompleteCommand ();
+            }
+        }
+    }
+
+    private Vector3 NextPathPosition () {
+
+        if (pathToCommand != null && pathToCommand.corners.Length > 1) {
+            return pathToCommand.corners[pathIndex];
+        }else {
+            if (commands.Count == 0) {
+                return targetPos;
+            }else {
+                return commands[0].GetPosition ();
+            }
+        }
+    }
 
 	public bool ObjectVisibleFromHeadbone (Transform other) {
 		Transform head = equipment.headGear.transform;
@@ -207,6 +236,12 @@ public class Character : Unit {
 
 		return true;
 	}
+
+    private void FindPathToCommand () {
+        pathToCommand = new NavMeshPath ();
+        navigationAgent.CalculatePath (commands[0].position, pathToCommand);
+        pathIndex = 0;
+    }
 
 	void MoveTowardsPosition (Vector3 position) {
 		Vector3 dir = (position - transform.position).normalized;
@@ -225,6 +260,7 @@ public class Character : Unit {
 		Destroy (currentCommand);
 		currentCommand = null;
 		animator.SetFloat ("Speed", 0);
+        pathToCommand.ClearCorners ();
 	}
 
     public void AddCommand ( Command command ) {
@@ -262,21 +298,19 @@ public class Character : Unit {
 	}
 
 	void DoMoveCommand () {
-		if (currentCommand.target) {
-			target = currentCommand.target;
-			state = State.Attacking;
-		}else{
-			targetPos = currentCommand.position;
-			target = null;
-			state = State.Searching;
-		}
+	    targetPos = currentCommand.position;
+		target = null;
+		state = State.Searching;
+        FindPathToCommand ();
 	}
 
 	void DoKillCommand () {
 		target = currentCommand.target;
-	}
+	    state = State.Attacking;
+        FindPathToCommand ();
+    }
 
-	public void OnEquip (CharacterEquipment.Equipment slot, GameObject equipment) {
+    public void OnEquip (CharacterEquipment.Equipment slot, GameObject equipment) {
 		Weapon wep = equipment.GetComponentInChildren<Weapon>();
 		if (wep) {
 			activeWeapons.Add (wep);
@@ -299,6 +333,14 @@ public class Character : Unit {
 		}
 	}
 
+    void OnDrawGizmos () {
+        if (commands.Count > 0) Gizmos.DrawLine (transform.position, commands[0].position);
+        if (pathToCommand != null) {
+            for (int i = 0; i < pathToCommand.corners.Length - 1; i++) {
+                Gizmos.DrawLine (pathToCommand.corners[i], pathToCommand.corners[i + 1]);
+            }
+        }
+    }
 }
 
 [System.Serializable]

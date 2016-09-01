@@ -16,61 +16,44 @@ public class Command : ScriptableObject {
 			Destroy (target.gameObject);
 	}
 
-    public static List<Command> MoveCommand ( Vector3 start, Vector3 end, Transform target, float speed, Character character ) {
-        Debug.Log ("what");
-        NavMeshPath path = new NavMeshPath ();
-        character.navigationAgent.CalculatePath (end, path);
-        Vector3[] points = path.corners;
-        List<Command> commands = new List<Command> ();
-
-        for (int i = 0; i < path.corners.Length - 1; i++) {
-
-            Vector3 current = path.corners[i];
-            Vector3 next = path.corners[i + 1];
-
-            Command c = Command.CreateInstance<Command> ();
-            c.name = "Move: " + next.ToString ();
-            float d = Vector3.Distance (current, next);
-            c.target = target;
-            c.time = d / speed;
-            c.position = next;
-            c.type = Type.Move;
-            if (character)
-                character.AddCommand (c);
-
-            commands.Add (c);
-        }
-
-        if (target) {
-            GameObject t = new GameObject ("MTarget");
-            t.tag = "CommandPointer";
-            t.transform.position = end;
-            t.transform.parent = target;
-        }
-
-        return commands;
+    public Vector3 GetPosition () {
+        if (target)
+            return target.position;
+        return position;
     }
 
-    public static List<Command> MoveCommand (Vector3 start, Vector3 end, float speed, Character character) {
-		return MoveCommand (start, end, null, speed, character);
-	}
+    public static Command MoveCommand ( Vector3 start, Vector3 end, float speed, Character character ) {
 
-	public static List<Command> KillCommand (Vector3 start, Transform target, float range, float speed, Character character, float dps, float health) {
-		if (Vector3.Distance (start, target.position) > range || !character.ObjectVisibleFromHeadbone (target)) {
-            List<Command> c = MoveCommand (start, target.position, speed, character);
-			character.AddCommand (c);
+        Command c = Command.CreateInstance<Command> ();
+        c.name = "Move: " + end.ToString ();
+        float d = Vector3.Distance (start, end);
+        c.time = d / speed;
+        c.position = end;
+        c.type = Type.Move;
+        character.AddCommand (c);
+
+        return c;
+    }
+
+	public static Command KillCommand (Vector3 start, Transform target, float range, float speed, Character character, float dps, float health) {
+		/*if (Vector3.Distance (start, target.position) > range || !Utility.LineOfSight (start + Vector3.up, target.position + Vector3.up)) {
+            MoveCommand (start, target.position, speed, character);
 		}
-		Command k = Command.CreateInstance <Command> ();
-		k.name = "Kill: " + target.name;
+
+        if (character.commands.Count > 0) {
+            Command lastCommand = character.commands[character.commands.Count - 1];
+            if (Vector3.Distance (lastCommand.position, target.position) < 0.5f)
+                character.commands.RemoveAt (character.commands.Count - 1);
+        }*/
+
+        Command k = Command.CreateInstance <Command> ();
+        k.name = "Kill: " + target.name;
 		k.time = dps / health;
 		k.position = target.position;
 		k.type = Type.Kill;
 		k.target = target;
 		character.AddCommand (k);
-
-        List<Command> killCommand = new List<Command> ();
-        killCommand.Add (k);
-        return killCommand;
-	}
+        return k;
+    }
 
 }

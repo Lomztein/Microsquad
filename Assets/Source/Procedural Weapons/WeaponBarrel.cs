@@ -16,7 +16,10 @@ public class WeaponBarrel : WeaponPart {
 	}
 
 	public void Flash () {
-		if (!flash.gameObject.activeInHierarchy) StartCoroutine (DoFlash ());
+        StopCoroutine (DoFlash ());
+        if (!flash.gameObject.activeInHierarchy) {
+            StartCoroutine (DoFlash ());
+        }
 	}
 
 	IEnumerator DoFlash () {

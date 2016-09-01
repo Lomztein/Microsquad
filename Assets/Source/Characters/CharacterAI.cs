@@ -4,6 +4,9 @@ using System.Collections;
 public class CharacterAI : MonoBehaviour {
 
 	public static float updateDeltaTime = 0.5f;
+
+    public enum Stance { Guard, Aggressive, Passive }
+    public Stance stance = Stance.Guard;
 	
 	[Header ("AI")]
 	public Character character;
@@ -26,6 +29,7 @@ public class CharacterAI : MonoBehaviour {
 	 */
 
 	void Start () {
+        character = GetComponent<Character> ();
 		objective = GameObject.FindGameObjectWithTag ("Objective");
 		StartCoroutine (AIUpdate ());
 	}
@@ -34,17 +38,23 @@ public class CharacterAI : MonoBehaviour {
 	IEnumerator AIUpdate () {
 		while (enabled) {
 			yield return new WaitForSeconds (updateDeltaTime);
-            FindTarget ();
-			if (character.target) {
-				AttackTarget ();
-			}else{
-				character.state = Character.State.Searching;
-			}
+            if (character.commands.Count == 0) {
+                switch (stance) {
+                    case Stance.Guard:
+                        FindTarget ();
+                        if (character.target) {
+                            AttackTarget ();
+                        } else {
+                            character.state = Character.State.Searching;
+                        }
+                        break;
+                }
+            }
 		}
 	}
 
 	void AttackTarget () {
-		character.state = Character.State.Attacking;
+        Command.KillCommand (transform.position, character.target, character.CalcOptics ().y, character.speed, character, character.CalcDPS (), character.health);
 	}
 
 	void FindTarget () {
