@@ -5,7 +5,7 @@ using System.Collections;
 public class ItemPrefab : ScriptableObject {
 
 	public enum Rarity { Common, Uncommnon, Special, Rare, VeryRare, Legendary };
-	public enum Type { OneHandTool, TwoHandTool, HeadArmor, ChestArmor, LegArmor, Consumeable, Ammunition };
+	public enum Type { Tool, HeadArmor, ChestArmor, LegArmor, Consumeable, Ammunition };
 	
 	public GameObject gameObject;
 	public Rarity rarity;
@@ -15,8 +15,9 @@ public class ItemPrefab : ScriptableObject {
 	public Mesh model;
 	public string data;
 
-    public static implicit operator Item (ItemPrefab prefab) {
+    public static explicit operator Item (ItemPrefab prefab) {
         Item item = CreateInstance<Item> ();
+        item.name = prefab.name;
         item.prefab = prefab;
         item.metadata = prefab.data;
         return item;

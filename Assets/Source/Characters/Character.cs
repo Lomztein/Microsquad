@@ -50,22 +50,12 @@ public class Character : Unit {
 		}
 	}*/
 
-	public void Start () {
+	public void Awake () {
 
 		animator.StartPlayback ();
 		animator.speed = 1f;
 
-		equipment.chestGear.character = this;
-		equipment.leftHand.character = this;
-		equipment.rightHand.character = this;
-		equipment.headGear.character = this;
-		equipment.legGear.character = this;
-
-		UpdateItem (equipment.rightHand);
-		UpdateItem (equipment.leftHand);
-		UpdateItem (equipment.headGear);
-		UpdateItem (equipment.chestGear);
-		UpdateItem (equipment.legGear);
+        InitializeEquipment ();
 
 		GameObject p = new GameObject ("Pointer");
 		pointer = p.transform;
@@ -74,6 +64,13 @@ public class Character : Unit {
 
         navigationAgent = GetComponent<NavMeshAgent> ();
 	}
+
+    private void InitializeEquipment () {
+        foreach (CharacterEquipment.Equipment e in equipment.slots) {
+            e.character = this;
+            e.Update ();
+        }
+    }
 
 	public float CalcDPS () {
 		float val = 0f;
@@ -91,35 +88,16 @@ public class Character : Unit {
 		return val;
 	}
 
-	public void ChangeEquipment (CharacterEquipment.Slot slotType, CharacterEquipment.Equipment slot, Item newItem) {
+	public Item ChangeEquipment (CharacterEquipment.Slot slotType, CharacterEquipment.Equipment slot, Item newItem) {
 		if (slotType != newItem.prefab.slotType)
-			return;
+			return null;
 
 		Item curItem = slot.item;
-		if ((slot == equipment.rightHand || slot == equipment.leftHand) &&
-		    (equipment.rightHand.item == equipment.leftHand.item)) {
-			
-			equipment.rightHand.item = null;
-			equipment.leftHand.item = null;
-		}
 
-		if (newItem.prefab.type == ItemPrefab.Type.TwoHandTool) {
-			CharacterEquipment.Equipment otherSlot = equipment.rightHand;
-			if (slot == equipment.rightHand)
-				otherSlot = equipment.leftHand;
+        slot.item = newItem;
+        UpdateItem (slot);
 
-			if (otherSlot.item != null && slot.item != null)
-				return;
-
-			slot.item = newItem;
-			otherSlot.item = newItem;
-		} else {
-			slot.item = newItem;
-			if (curItem)
-				PhysicalItem.Create (curItem, transform.position, Quaternion.identity);
-		}
-
-		UpdateItem (slot);
+        return curItem;
 	}
 
 	float CalcWepWeight () {
@@ -131,27 +109,7 @@ public class Character : Unit {
 	}
 
 	void UpdateItem (CharacterEquipment.Equipment slot) {
-		if (slot.item == null)
-			return;
-
-		if ((slot == equipment.rightHand || slot == equipment.leftHand) &&
-			(equipment.rightHand.item == equipment.leftHand.item) &&
-		    slot.item.prefab.type == ItemPrefab.Type.TwoHandTool) {
-
-			if (equipment.rightHand.physicalItem) {
-				GameObject.Destroy (equipment.rightHand.physicalItem);
-			}
-
-			GameObject newTool = (GameObject)Instantiate (equipment.rightHand.item.prefab.gameObject, equipment.rightHand.transform.position, equipment.rightHand.transform.rotation);
-			PhysicalTool tool = newTool.GetComponent<PhysicalTool> ();
-			equipment.rightHand.physicalItem = tool.gameObject;
-			equipment.leftHand.physicalItem = tool.gameObject;
-			equipment.rightHand.tool = tool;
-			equipment.leftHand.tool = tool;
-			tool.transform.transform.parent = transform;
-		}else{
-			slot.Update ();
-		}
+		slot.Update ();
 	}
 
 	void ResetAltitude () {
@@ -168,7 +126,8 @@ public class Character : Unit {
 
 		if (Vector3.Distance (transform.position, targetPos) > (speed + 0.1f) * Time.fixedDeltaTime)
 			transform.rotation = Quaternion.RotateTowards (transform.rotation, Quaternion.Euler (0f, pointer.eulerAngles.y, 0f), Time.fixedDeltaTime * stats.strength / CalcWepWeight () * 360f);
-		pointer.LookAt (targetPos);
+
+        pointer.LookAt (targetPos);
 
 		if (target) {
 
@@ -212,7 +171,8 @@ public class Character : Unit {
     private void MoveTowardsCommand () {
         if (pathToCommand != null) {
             if (Vector3.Distance (transform.position, NextPathPosition ()) > (speed + 0.1f) * Time.fixedDeltaTime) {
-                MoveTowardsPosition (NextPathPosition ());
+                targetPos = NextPathPosition ();
+                MoveTowardsPosition (targetPos);
             } else {
                 pathIndex++;
                 if (pathIndex == pathToCommand.corners.Length)
@@ -240,7 +200,7 @@ public class Character : Unit {
     }
 
 	public bool ObjectVisibleFromHeadbone (Transform other) {
-		Transform head = equipment.headGear.transform;
+		Transform head = FindSlotByType (CharacterEquipment.Slot.Head).transform;
 		Ray ray = new Ray (head.position, (other.position + Vector3.up * 1f) - head.position);
 		RaycastHit hit;
 
@@ -298,6 +258,24 @@ public class Character : Unit {
 			AddCommand (command);
 	}
 
+    public CharacterEquipment.Equipment FindSlotByName (string slotName) {
+        foreach (CharacterEquipment.Equipment e in equipment.slots) {
+            if (e.name == slotName)
+                return e;
+        }
+
+        return null;
+    }
+
+    public CharacterEquipment.Equipment FindSlotByType (CharacterEquipment.Slot slotType) {
+        foreach (CharacterEquipment.Equipment e in equipment.slots) {
+            if (e.slot == slotType)
+                return e;
+        }
+
+        return null;
+    }
+
 	void EquipWeapon () {
 	}
 
@@ -335,6 +313,14 @@ public class Character : Unit {
 		}
 	}
 
+    void DropLooseEquipment () {
+        foreach (CharacterEquipment.Equipment e in equipment.slots) {
+            if (e.dropOnDeath) {
+                e.Drop ();
+            }
+        }
+    }
+
 	private bool isDead = false;
 	void OnTakeDamage (Damage d) {
 		health -= d.damage;
@@ -358,8 +344,15 @@ public class Character : Unit {
         if (faction == Faction.Player)
             Game.AddMessage ("Oh my god, they killed " + unitName + "!");
 
-        tag = "DeadCharacter";
-        BroadcastMessage ("OnDeath");
+        BroadcastMessage ("OnDeath", SendMessageOptions.DontRequireReceiver);
+        DropLooseEquipment ();
+
+        int layer = LayerMask.NameToLayer ("DeadCharacter");
+        Collider[] colliders = GetComponentsInChildren<Collider> ();
+        for (int i = 0; i < colliders.Length; i++) {
+            colliders[i].gameObject.tag = "DeadCharacter";
+            colliders[i].gameObject.layer = layer;
+        }
     }
 
     void OnDrawGizmos () {
@@ -391,53 +384,58 @@ public struct CharacterStats {
 public class CharacterEquipment {
 
 	public enum Slot { Hand, Head, Chest, Legs, None };
-	public CharacterEquipment.Tool rightHand;
-	public CharacterEquipment.Tool leftHand;
-	public CharacterEquipment.Armor headGear;
-	public CharacterEquipment.Armor chestGear;
-	public CharacterEquipment.Armor legGear;
+    public Equipment[] slots;
 
 	[System.Serializable]
 	public class Equipment {
 
+        public string name;
 		public Slot slot;
 		public Item item;
 		public GameObject physicalItem;
 		public Transform transform;
+        public bool dropOnDeath;
 
 		public Character character;
 
-		public virtual void Update () {
-		}
+        public virtual void Update () {
+            if (physicalItem)
+                Object.Destroy (physicalItem);
 
-	}
+            if (item) {
+                GameObject newTool = (GameObject)Object.Instantiate (item.prefab.gameObject, transform.position, transform.rotation);
 
-	[System.Serializable]
-	public class Tool : Equipment {
+                newTool.transform.position = transform.position;
+                newTool.transform.rotation = transform.rotation;
+                newTool.transform.parent = transform;
+                    
+                newTool.SendMessage ("OnEquip", new EquipMessage (character, item.metadata, this));
+                character.OnEquip (this, newTool);
+            }
+        }
 
-		public PhysicalTool tool;
+        public PhysicalItem Drop () {
+            //PhysicalItem pItem = PhysicalItem.Create (item, transform.position, transform.rotation);
 
-		public override void Update () {
-			if (physicalItem) {
-				GameObject.Destroy (physicalItem);
-			}
+            item = null;
+            Update ();
 
-			GameObject newTool = (GameObject)GameObject.Instantiate (item.prefab.gameObject, transform.position, transform.rotation);
-			PhysicalTool t = newTool.GetComponent<PhysicalTool> ();
-			physicalItem = t.gameObject;
-			physicalItem.transform.parent = transform;
-			tool = t;
+            //return pItem;
+            return null;
+        }
 
-			newTool.SendMessage ("OnEquip", WeaponGenerator.cur.GenerateRandomWeaponData ());
-			character.OnEquip (this, newTool);
-		}
+        public struct EquipMessage {
 
-	}
+            public Character character;
+            public string metadata;
+            public Equipment slot;
 
-	[System.Serializable]
-	public class Armor : Equipment {
+            public EquipMessage (Character ch, string me, Equipment sl) {
+                character = ch;
+                metadata = me;
+                slot = sl;
+            }
 
-		public enum Position { Head, Chest, Legs };
-
-	}
+        }
+    }
 }

@@ -19,7 +19,8 @@ public class Game : MonoBehaviour {
     public LayerMask[] layers;
     public int[] layerIndexes;
 	public Color[] factionColors;
-	public Material[] factionColorMaterials;
+    public Material[] factionColorMaterials;
+    public LayerMask deadCharacter;
 
 	public LayerMask terrainLayer;
 	public int terrainLayerIndex;

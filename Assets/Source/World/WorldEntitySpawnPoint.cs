@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-[ExecuteInEditMode]
 public class WorldEntitySpawnPoint : MonoBehaviour {
 
     const float IMPORT_SCALE = 100f;
