@@ -15,6 +15,7 @@ public class Settings : MonoBehaviour {
     [Header ("Settings")]
     public Color guiImageColor;
     public Color guiTextColor;
+    public bool debugMode;
 
     // Dev settings aren't supposed to be changed from within the game,
     // and exists more of a utility tool, so that one doesn't have to change
@@ -44,5 +45,21 @@ public class Settings : MonoBehaviour {
                 }
             }
         }
+    }
+
+
+
+    void OnGUI () {
+        if (debugMode) {
+            debugIndex = -1;
+            if (PlayerInput.itemInHand)
+                GUI.Label (GetDebugPosition (), "Item in hand: " + PlayerInput.itemInHand.ToString ());
+        }
+    }
+
+    int debugIndex = 0;
+    Rect GetDebugPosition () {
+        debugIndex++;
+        return new Rect (10, 10 + 30 * debugIndex, Screen.width, 20);
     }
 }

@@ -30,11 +30,17 @@ public class PlayerInput : MonoBehaviour {
 	public static float defaultFixedDeltaTime = 0.02f;
 	public float slowdownFactor = 0.1f;
 
-	// Use this for initialization
-	void Awake () {
+    [Header ("Items")]
+    public static Inventory.Slot itemInHand;
+    public GameObject representativeObject;
+    public LayerMask physicalItemMask;
+
+    // Use this for initialization
+    void Awake () {
 		camera = Camera.main;
 		cur = this;
 		defaultFixedDeltaTime = Time.fixedDeltaTime;
+        itemInHand = Inventory.Slot.CreateSlot ();
 	}
 
 	void DeselectAllUnits () {
@@ -96,15 +102,18 @@ public class PlayerInput : MonoBehaviour {
 		Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
 		RaycastHit hit;
 		
-		if (Physics.Raycast (ray, out hit, Mathf.Infinity, Game.game.terrainLayer + Game.game.all)) {
+		if (Physics.Raycast (ray, out hit, Mathf.Infinity, Game.game.groundLayer + Game.game.all)) {
 			worldMousePos = hit.point;
 			WorldCursor.cur.transform.position = worldMousePos;
+            representativeObject.transform.position = worldMousePos + Vector3.up + Vector3.up * GetInHandHeight ();
+            representativeObject.transform.rotation = Quaternion.Euler (new Vector3 (0f, representativeObject.transform.eulerAngles.y + 60f * Time.deltaTime, 0f));
 
 			if (Input.GetMouseButtonDown (0)) {
 				if (!Input.GetButton ("Shift"))
 					DeselectAllUnits ();
 
 				mouseDragStart = worldMousePos;
+                PickUpItem (worldMousePos);
 			}
 
 			if (Input.GetMouseButton (0)) {
@@ -166,6 +175,10 @@ public class PlayerInput : MonoBehaviour {
         transform.position += Quaternion.Euler (0f, camera.transform.eulerAngles.y, 0f) * movement * sensitivity * Time.unscaledDeltaTime;
 	}
 
+    private float GetInHandHeight () {
+        return Mathf.Sin (Time.time / 0.5f) * 0.2f;
+    }
+
 	public static bool IsInsideSelector (Vector3 position) {
 		return PlayerInput.cur.selector.Contains (position);
 	}
@@ -181,7 +194,7 @@ public class PlayerInput : MonoBehaviour {
 	void OrderUnits (RaycastHit hit, Unit unit) {
         // Figure out whatever was clicked.
 
-        if (hit.collider.gameObject.layer == Game.game.terrainLayerIndex) {
+        if (hit.collider.gameObject.layer == Game.game.groundLayerIndex) {
 			Vector3[] positions = Micromanagement.GetSpriralPositions (1.5f, selectedUnits.Count);
 			for (int i = 0; i < selectedUnits.Count; i++) {
 
@@ -214,7 +227,49 @@ public class PlayerInput : MonoBehaviour {
 		}
 	}
 
-	void OnDrawGizmos () {
+    public void PickUpItem (Vector3 position) {
+        Collider[] col = Physics.OverlapSphere (position, 0.25f);
+
+        float dist = float.MaxValue;
+        GameObject closest = null;
+
+        for (int i = 0; i < col.Length; i++) {
+            float  locDist = Vector3.Distance (col[i].transform.position, position);
+            if (locDist < dist) {
+                locDist = dist;
+                closest = col[i].gameObject;
+            }
+        }
+
+        if (itemInHand.item) {
+            PhysicalItem.Create (itemInHand.item, itemInHand.count, position + Vector3.up * (1 + GetInHandHeight ()), representativeObject.transform.rotation);
+            itemInHand.item = null;
+            itemInHand.count = 0;
+        }
+
+        PhysicalItem pItem = closest.GetComponent<PhysicalItem> ();
+
+        if (pItem) {
+            pItem.singleSlot.MoveItem (itemInHand);
+            Destroy (closest);
+        }
+
+        UpdateItemInHand ();
+    }
+
+    public static void UpdateItemInHand () {
+        MeshFilter filter = cur.representativeObject.GetComponent<MeshFilter> ();
+        if (itemInHand.item) {
+            cur.representativeObject.SetActive (true);
+            filter.mesh = itemInHand.item.GetMesh ();
+            Debug.Log ("true");
+        } else {
+            cur.representativeObject.SetActive (false);
+            Debug.Log ("false");
+        }
+    }
+
+    void OnDrawGizmos () {
 		Gizmos.DrawWireCube (selector.center, selector.size);
 	}
 }

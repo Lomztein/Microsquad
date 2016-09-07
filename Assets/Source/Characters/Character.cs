@@ -316,7 +316,7 @@ public class Character : Unit {
     void DropLooseEquipment () {
         foreach (CharacterEquipment.Equipment e in equipment.slots) {
             if (e.dropOnDeath) {
-                e.Drop ();
+                Game.game.StartCoroutine (e.Drop (0.1f));
             }
         }
     }
@@ -414,14 +414,18 @@ public class CharacterEquipment {
             }
         }
 
-        public PhysicalItem Drop () {
-            //PhysicalItem pItem = PhysicalItem.Create (item, transform.position, transform.rotation);
+        public IEnumerator Drop (float waitTime) {
+            yield return new WaitForSeconds (waitTime);
+
+            Rigidbody body = transform.GetComponentInParent<Rigidbody> ();
+            GameObject pItem = PhysicalItem.Create (item, 1, transform.position, transform.rotation).gameObject;
+            Rigidbody drop = pItem.GetComponent<Rigidbody> ();
+
+            drop.velocity = body.velocity;
+            drop.angularVelocity = body.angularVelocity;
 
             item = null;
             Update ();
-
-            //return pItem;
-            return null;
         }
 
         public struct EquipMessage {

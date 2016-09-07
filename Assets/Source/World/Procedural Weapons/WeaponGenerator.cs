@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Linq;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Collections.Generic;
 
 public class WeaponGenerator : MonoBehaviour {
 
@@ -107,7 +108,6 @@ public class WeaponGenerator : MonoBehaviour {
 			weapon.magazineID = -1;
 		}
 
-		weapon.SaveToLongID ();
 		return weapon;
 	}
 
@@ -124,6 +124,40 @@ public class WeaponGenerator : MonoBehaviour {
 		}
 		return amount;
 	}
+
+    public static Mesh GenerateWeaponMesh (string weaponData) {
+        SavedWeapon sw = SavedWeapon.LoadFromString (weaponData);
+        GameObject weapon = sw.Build ();
+
+        WeaponBody weaponBody = weapon.GetComponentInChildren<WeaponBody> ();
+
+        List<MeshFilter> filters = new List<MeshFilter> ();
+        filters.Add (weaponBody.GetComponentInChildren<MeshFilter> ());
+        filters.Add (weaponBody.barrel.GetComponentInChildren<MeshFilter> ());
+        filters.Add (weaponBody.magazine.GetComponentInChildren<MeshFilter> ());
+
+        if (weaponBody.optic)
+            filters.Add (weaponBody.optic.GetComponentInChildren<MeshFilter> ());
+
+        if (weaponBody.stock)
+            filters.Add (weaponBody.stock.GetComponentInChildren<MeshFilter> ());
+
+        if (weaponBody.underBarrel)
+            filters.Add (weaponBody.underBarrel.GetComponentInChildren<MeshFilter> ());
+
+        CombineInstance[] instances = new CombineInstance[filters.Count];
+        for (int i = 0; i < instances.Length; i++) {
+            instances[i].mesh = filters[i].sharedMesh;
+            instances[i].transform = filters[i].transform.localToWorldMatrix;
+        }
+
+        Mesh mesh = new Mesh ();
+        mesh.CombineMeshes (instances);
+
+        Destroy (weapon);
+
+        return mesh;
+    }
 
 }
 
@@ -156,7 +190,7 @@ public class SavedWeapon : ScriptableObject {
 		WeaponClass c = WeaponGenerator.cur.weaponClasses[classID];
 		
 		GameObject body = (GameObject)Instantiate (c.bodies[bodyID], w.transform.position, Quaternion.identity);
-		WeaponBody wBody = body.GetComponent<WeaponBody>();
+		WeaponBody wBody = body.GetComponentInChildren<WeaponBody>();
 		w.GetComponent<Weapon>().body = wBody;
 		body.transform.parent = w.transform;
 		
@@ -211,7 +245,7 @@ public class SavedWeapon : ScriptableObject {
 		return wep;
 	}
 
-	public ulong SaveToLongID () {
+	/*public ulong SaveToLongID () {
 		int[] IDs = new int[] { classID, bodyID, barrelID, opticID, stockID, underBarrelID, magazineID };
 
 		int bitsPerPart = Mathf.FloorToInt (64 / IDs.Length);
@@ -258,5 +292,5 @@ public class SavedWeapon : ScriptableObject {
 		wep.magazineID = IDs[0];
 
 		return wep;
-	}
+	}*/
 }

@@ -23,9 +23,11 @@ public class Game : MonoBehaviour {
     public LayerMask deadCharacter;
 
 	public LayerMask terrainLayer;
-	public int terrainLayerIndex;
+	public LayerMask groundLayer;
+    public int terrainLayerIndex;
+    public int groundLayerIndex;
 
-	[Header ("Settings")]
+    [Header ("Settings")]
 	public static float soundVolume = 1f;
 	public static float musicVolume = 1f;
 

@@ -6,13 +6,10 @@ public class Item : ScriptableObject {
     public ItemPrefab prefab;
     public string metadata;
 
-	// Use this for initialization
-	void Start () {
-	
-	}
-	
-	// Update is called once per frame
-	void Update () {
-	
-	}
+    public virtual Mesh GetMesh () {
+        if (prefab.type == ItemPrefab.Type.Weapon) {
+            return WeaponGenerator.GenerateWeaponMesh (metadata);
+        }else
+            return prefab.model;
+    }
 }

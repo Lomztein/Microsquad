@@ -5,7 +5,7 @@ using System.Collections;
 public class ItemPrefab : ScriptableObject {
 
 	public enum Rarity { Common, Uncommnon, Special, Rare, VeryRare, Legendary };
-	public enum Type { Tool, HeadArmor, ChestArmor, LegArmor, Consumeable, Ammunition };
+	public enum Type { Tool, Weapon, HeadArmor, ChestArmor, LegArmor, Consumeable, Ammunition };
 	
 	public GameObject gameObject;
 	public Rarity rarity;
@@ -14,6 +14,7 @@ public class ItemPrefab : ScriptableObject {
 	public Sprite icon;
 	public Mesh model;
 	public string data;
+    public int maxStack = 999;
 
     public static explicit operator Item (ItemPrefab prefab) {
         Item item = CreateInstance<Item> ();
@@ -22,5 +23,4 @@ public class ItemPrefab : ScriptableObject {
         item.metadata = prefab.data;
         return item;
     }
-
 }

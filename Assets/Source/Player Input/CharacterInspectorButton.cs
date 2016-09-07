@@ -19,8 +19,10 @@ public class CharacterInspectorButton : MonoBehaviour {
 	}
 
 	public void OnClick () {
-		Item i = Game.itemInHand.item;
+		Item i = Game.itemInHand.singleSlot.item;
 		if (slot == i.prefab.slotType) {
+            if (Game.itemInHand.singleSlot.count != 1)
+                Debug.LogWarning ("Tried to place a multicount item in a character equipment slot.");
 		}
 	}
 }
