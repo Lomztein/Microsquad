@@ -8,7 +8,11 @@ public class WeaponSpawn : PhysicalTool {
 		wep.transform.position = transform.position;
 		wep.transform.rotation = transform.rotation;
 		wep.transform.parent = transform;
+        wep.GetComponent<Weapon> ().character = message.character;
         message.slot.physicalItem = gameObject;
-        Debug.Log ("Generating weapon");
 	}
+
+    public void OnUnEquip ( CharacterEquipment.Equipment.EquipMessage message ) {
+        message.character.activeWeapons.Remove (GetComponentInChildren<Weapon>());
+    }
 }

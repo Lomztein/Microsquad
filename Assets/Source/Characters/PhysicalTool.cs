@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class PhysicalTool : PhysicalItem {
+public class PhysicalTool : MonoBehaviour {
 
 	public enum Type { Weapon, Toggle };
 	public Type type;

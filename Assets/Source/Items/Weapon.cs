@@ -5,9 +5,10 @@ using System.Collections.Generic;
 public class Weapon : MonoBehaviour {
 
 	public string weaponName;
-	// Name consists of the individual parts name mods combined.
-	// First the barrel, then scope, then body.
+    // Name consists of the individual parts name mods combined.
+    // First the barrel, then scope, then body.
 
+    public Character character;
 	public WeaponBody body;
 	public WeaponStats combinedStats;
 	public Transform[] muzzles;
@@ -83,6 +84,8 @@ public class Weapon : MonoBehaviour {
 
 				if (body.fireSound)
 					body.audioSource.PlayOneShot (body.fireSound, Game.soundVolume);
+
+                character.WeaponRecoil (transform.parent, combinedStats.recoil);
 			}
 			body.magazine.currentAmmo--;
 			if (i != muzzles.Length - 1) yield return new WaitForSeconds (f);

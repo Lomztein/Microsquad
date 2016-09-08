@@ -22,6 +22,7 @@ public class Character : Unit {
 	public CharacterEquipment equipment;
 	public Inventory inventory;
 	public List<Weapon> activeWeapons;
+    public CharacterEquipment.Equipment toolSlot;
 
 	[Header ("Commands")]
 	public List<Command> commands = new List<Command>();
@@ -67,9 +68,12 @@ public class Character : Unit {
 
     private void InitializeEquipment () {
         foreach (CharacterEquipment.Equipment e in equipment.slots) {
+            e.item = Inventory.Slot.CreateSlot ();
             e.character = this;
             e.Update ();
         }
+
+        toolSlot = FindSlotByType (CharacterEquipment.Slot.Hand);
     }
 
 	public float CalcDPS () {
@@ -88,16 +92,12 @@ public class Character : Unit {
 		return val;
 	}
 
-	public Item ChangeEquipment (CharacterEquipment.Slot slotType, CharacterEquipment.Equipment slot, Item newItem) {
-		if (slotType != newItem.prefab.slotType)
-			return null;
+	public void ChangeEquipment (CharacterEquipment.Slot slotType, CharacterEquipment.Equipment slot, Inventory.Slot newSlot) {
+		if (newSlot.item && slotType != newSlot.item.prefab.slotType)
+			return;
 
-		Item curItem = slot.item;
-
-        slot.item = newItem;
+        newSlot.MoveItem (slot.item);
         UpdateItem (slot);
-
-        return curItem;
 	}
 
 	float CalcWepWeight () {
@@ -128,6 +128,13 @@ public class Character : Unit {
 			transform.rotation = Quaternion.RotateTowards (transform.rotation, Quaternion.Euler (0f, pointer.eulerAngles.y, 0f), Time.fixedDeltaTime * stats.strength / CalcWepWeight () * 360f);
 
         pointer.LookAt (targetPos);
+
+        // TODO: Change activeWeapons to a single weapon or tool reference.
+        for (int i = 0; i < activeWeapons.Count; i++) {
+            Transform tran = activeWeapons[i].transform;
+            tran.position = Vector3.Lerp (tran.position, toolSlot.transform.position, stats.recoilRecovery * Time.fixedDeltaTime);
+            tran.rotation = Quaternion.Slerp (tran.rotation, toolSlot.transform.rotation, stats.recoilRecovery / 5f * Time.fixedDeltaTime);
+        }
 
 		if (target) {
 
@@ -227,9 +234,16 @@ public class Character : Unit {
 	void FireWeapons () {
 		for (int i = 0; i < activeWeapons.Count; i++)
 			// Lol this actually worked.
-			if (transform.rotation == Quaternion.RotateTowards (transform.rotation, Quaternion.Euler (0f, pointer.eulerAngles.y, 0f), 5))
-				activeWeapons[i].Fire (faction, target);
+			if (transform.rotation == Quaternion.RotateTowards (transform.rotation, Quaternion.Euler (0f, pointer.eulerAngles.y, 0f), 5)) {
+                activeWeapons[i].Fire (faction, target);
+            }
 	}
+
+    public void WeaponRecoil (Transform weapon, float recoil) {
+        recoil /= stats.strength;
+        weapon.position -= weapon.forward * recoil;
+        weapon.eulerAngles += new Vector3 (recoil, 0.25f * Random.Range (-recoil * 0.25f, recoil * 0.25f), 0f);
+    }
 
 	public void CompleteCommand () {
 		commands.Remove (currentCommand);
@@ -239,6 +253,10 @@ public class Character : Unit {
         ClearPathfindingAgent ();
         state = State.Idle;
 	}
+
+    public void CMInspect () {
+        CharacterInspectorGUI.InspectCharacter (this, new Vector2 (Screen.width / 2f, Screen.height / 2f + 100));
+    }
 
     public void AddCommand ( Command command ) {
         commands.Add (command);
@@ -347,7 +365,7 @@ public class Character : Unit {
         BroadcastMessage ("OnDeath", SendMessageOptions.DontRequireReceiver);
         DropLooseEquipment ();
 
-        int layer = LayerMask.NameToLayer ("DeadCharacter");
+        int layer = LayerMask.NameToLayer ("Ragdoll");
         Collider[] colliders = GetComponentsInChildren<Collider> ();
         for (int i = 0; i < colliders.Length; i++) {
             colliders[i].gameObject.tag = "DeadCharacter";
@@ -371,11 +389,13 @@ public struct CharacterStats {
 	public float strength;
 	public float accuracy;
 	public float speed;
+    public float recoilRecovery;
 
-	public CharacterStats (float _strength = 1f, float _accuracy = 1f, float _speed = 1f) {
+	public CharacterStats (float _strength = 1f, float _accuracy = 1f, float _speed = 1f, float _recoilRecovery = 15f) {
 		strength = _strength;
 		accuracy = _accuracy;
 		speed = _speed;
+        recoilRecovery = _recoilRecovery;
 	}
 	
 }
@@ -383,7 +403,8 @@ public struct CharacterStats {
 [System.Serializable]
 public class CharacterEquipment {
 
-	public enum Slot { Hand, Head, Chest, Legs, None };
+	public enum Slot { Hand, Head, Chest, Legs, Ammo, None };
+    public enum InspectorSide { Left, Right }
     public Equipment[] slots;
 
 	[System.Serializable]
@@ -391,25 +412,30 @@ public class CharacterEquipment {
 
         public string name;
 		public Slot slot;
-		public Item item;
+		public Inventory.Slot item;
 		public GameObject physicalItem;
 		public Transform transform;
         public bool dropOnDeath;
 
+        public InspectorSide side;
+        public Sprite defualtSlotImage;
+
 		public Character character;
 
         public virtual void Update () {
-            if (physicalItem)
+            if (physicalItem) {
+                physicalItem.SendMessage ("OnUnEquip", new EquipMessage (character, "", this));
                 Object.Destroy (physicalItem);
+            }
 
-            if (item) {
-                GameObject newTool = (GameObject)Object.Instantiate (item.prefab.gameObject, transform.position, transform.rotation);
+            if (item && item.item) {
+                GameObject newTool = (GameObject)Object.Instantiate (item.item.prefab.gameObject, transform.position, transform.rotation);
 
                 newTool.transform.position = transform.position;
                 newTool.transform.rotation = transform.rotation;
                 newTool.transform.parent = transform;
                     
-                newTool.SendMessage ("OnEquip", new EquipMessage (character, item.metadata, this));
+                newTool.SendMessage ("OnEquip", new EquipMessage (character, item.item.metadata, this));
                 character.OnEquip (this, newTool);
             }
         }
@@ -418,7 +444,7 @@ public class CharacterEquipment {
             yield return new WaitForSeconds (waitTime);
 
             Rigidbody body = transform.GetComponentInParent<Rigidbody> ();
-            GameObject pItem = PhysicalItem.Create (item, 1, transform.position, transform.rotation).gameObject;
+            GameObject pItem = PhysicalItem.Create (item.item, 1, transform.position, transform.rotation).gameObject;
             Rigidbody drop = pItem.GetComponent<Rigidbody> ();
 
             drop.velocity = body.velocity;

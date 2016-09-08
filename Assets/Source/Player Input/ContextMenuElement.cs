@@ -9,10 +9,6 @@ public class ContextMenuElement : MonoBehaviour {
 		gameObject.SendMessage ("CM" + elements [index].method);
 	}
 
-	void OnMouseDown () {
-		ContextMenu.Open (elements, this);
-	}
-
 	[System.Serializable]
 	public class Element {
 		public string name;

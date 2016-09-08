@@ -5,41 +5,55 @@ using UnityEngine.UI;
 
 public class ContextMenu : MonoBehaviour {
 
-	public GameObject buttonPrefab;
 	public RectTransform backgroundPanel;
-
 	public Vector3 buttonSize;
-	private static List<GameObject> curButtons = new List<GameObject>();
-	public static ContextMenu menu;
-
-	void Awake () {
-		menu = this;
-		gameObject.SetActive (false);
-	}
+    public ContextMenuElement element;
+    public int elementCount;
 
 	public static void Open (ContextMenuElement.Element[] elements, ContextMenuElement behaviour) {
-		menu.gameObject.SetActive (true);
-		menu.transform.position = Input.mousePosition + new Vector3 (menu.buttonSize.x / 2f, -menu.buttonSize.y * elements.Length / 2f);
-		foreach (GameObject go in curButtons) {
-			Destroy (go);
-		}
-		curButtons = new List<GameObject> ();
+        GameObject panelPrefab = Resources.Load<GameObject> ("GUI/ContextMenu");
 
-		menu.backgroundPanel.sizeDelta = new Vector2 (menu.buttonSize.x, menu.buttonSize.y * elements.Length);
-		for (int i = 0; i < elements.Length; i++) { 
-			GameObject newb = (GameObject)Instantiate (menu.buttonPrefab, Vector3.zero, Quaternion.identity);
-			newb.transform.position = Input.mousePosition + new Vector3 (menu.buttonSize.x / 2f, -menu.buttonSize.y / 2f + menu.buttonSize.y * -i);
-			curButtons.Add (newb);
-			menu.AddListener (newb, i, elements[i].name, behaviour);
-			newb.transform.SetParent (menu.transform, true);
-		}
-
+        GameObject newMenu = Instantiate (panelPrefab);
+        ContextMenu menu = newMenu.GetComponent<ContextMenu> ();
+        menu.Initialize (elements, behaviour);
 	}
+
+    void Update () {
+        if (Input.GetMouseButtonDown (1))
+            Destroy ();
+
+        Vector3 pos = Camera.main.WorldToScreenPoint (element.transform.position);
+        transform.position = new Vector3 (pos.x, pos.y, 0f) + new Vector3 (buttonSize.x / 2f, -buttonSize.y * elementCount / 2f);
+    }
+
+    void Initialize (ContextMenuElement.Element[] elements, ContextMenuElement behaviour) {
+        GameObject buttonPrefab = Resources.Load<GameObject> ("GUI/ContextButton");
+
+        element = behaviour;
+        elementCount = elements.Length;
+        transform.SetParent (GUIManager.mainCanvas.transform, true);
+
+        for (int i = 0; i < elements.Length; i++) {
+            GameObject newb = (GameObject)Instantiate (buttonPrefab, Vector3.zero, Quaternion.identity);
+
+            AddListener (newb, i, elements[i].name, behaviour);
+            newb.transform.SetParent (transform, true);
+        }
+    }
+
+    void Destroy () {
+        Destroy (gameObject);
+    }
 
 	void AddListener (GameObject button, int index, string text, ContextMenuElement element) {
 		Button b = button.GetComponent <Button> ();
 		Text t = button.transform.GetChild (0).GetComponent<Text> ();
 		t.text = text;
-		b.onClick.AddListener(() => element.OnElementClicked (index));
+        b.onClick.AddListener (() => OnClick (index));
 	}
+
+    void OnClick (int index) {
+        element.OnElementClicked (index);
+        Destroy (gameObject);
+    }
 }

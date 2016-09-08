@@ -6,7 +6,6 @@ public class Game : MonoBehaviour {
 
 	[Header ("Game Information")]
 	public Squad currentSquad;
-	public static PhysicalItem itemInHand;
 
 	[Header ("References")]
 	public static Game game;

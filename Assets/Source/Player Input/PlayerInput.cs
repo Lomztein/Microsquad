@@ -114,7 +114,7 @@ public class PlayerInput : MonoBehaviour {
 
 				mouseDragStart = worldMousePos;
                 PickUpItem (worldMousePos);
-			}
+            }
 
 			if (Input.GetMouseButton (0)) {
 
@@ -123,8 +123,8 @@ public class PlayerInput : MonoBehaviour {
 				selector.size = mouseDragStart - worldMousePos;
 				selector.size = new Vector3 (selector.size.x, 2f, selector.size.z);
 			}
-			
-			Unit unit = hit.collider.GetComponent<Unit>();
+
+            Unit unit = hit.collider.GetComponent<Unit>();
 			if (unit) {
 				WorldCursor.cur.transform.position = hit.collider.transform.position;
 				if (unit.faction == Faction.Player) {
@@ -152,7 +152,12 @@ public class PlayerInput : MonoBehaviour {
 			
 			if (Input.GetMouseButtonDown (1)) {
 				OrderUnits (hit, unit);
-			}
+
+                ContextMenuElement element = hit.collider.GetComponentInParent<ContextMenuElement> ();
+                if (element) {
+                    ContextMenu.Open (element.elements, element);
+                }
+            }
 		}
 
 		Vector3 movement = Vector3.zero;
@@ -262,10 +267,8 @@ public class PlayerInput : MonoBehaviour {
         if (itemInHand.item) {
             cur.representativeObject.SetActive (true);
             filter.mesh = itemInHand.item.GetMesh ();
-            Debug.Log ("true");
         } else {
             cur.representativeObject.SetActive (false);
-            Debug.Log ("false");
         }
     }
 

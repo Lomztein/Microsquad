@@ -4,25 +4,40 @@ using UnityEngine.UI;
 
 public class CharacterInspectorButton : MonoBehaviour {
 
-	public CharacterInspector inspector;
+	public CharacterInspectorGUI inspector;
 	public Sprite defaultIcon;
-	public Button button;
 
-	public CharacterEquipment.Slot slot;
-	public ItemPrefab.Type type;
+	public Button button;
+    public Image image;
+    public Text text;
+
+    public CharacterEquipment.Equipment equipment;
 
 	// Use this for initialization
-	void Awake () {
+	void Start () {
 		if (inspector.character.faction != Faction.Player) {
 			button.interactable = false;
 		}
+
+        UpdateButton ();
+    }
+
+    public void OnClick () {
+        inspector.character.ChangeEquipment (equipment.slot, equipment, PlayerInput.itemInHand);
+        UpdateButton ();
 	}
 
-	public void OnClick () {
-		Item i = Game.itemInHand.singleSlot.item;
-		if (slot == i.prefab.slotType) {
-            if (Game.itemInHand.singleSlot.count != 1)
-                Debug.LogWarning ("Tried to place a multicount item in a character equipment slot.");
-		}
-	}
+    void UpdateButton () {
+        text.text = "";
+
+        if (equipment.item.item) {
+            image.sprite = equipment.item.item.prefab.icon;
+            if (equipment.item.count > 1) {
+                text.text = equipment.item.count.ToString ();
+            }
+        } else {
+            image.sprite = defaultIcon;
+        }
+        PlayerInput.UpdateItemInHand ();
+    }
 }
