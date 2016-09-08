@@ -11,7 +11,6 @@ public class ItemPrefab : ScriptableObject {
 	public Rarity rarity;
 	public Type type;
 	public CharacterEquipment.Slot slotType;
-	public Sprite icon;
 	public Mesh model;
 	public string data;
     public int maxStack = 999;

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 
 public class Game : MonoBehaviour {
 
@@ -86,4 +87,20 @@ public class Game : MonoBehaviour {
 			GUI.Label (new Rect (10f, Screen.height - 20f * i - 30, 200f, 20f), messages[i]);
 		}
 	}
+
+    public void Restart () {
+        RestartScene ();
+    }
+
+    public void Quit () {
+        QuitToDesktop ();
+    }
+
+    public static void RestartScene () {
+        SceneManager.LoadScene (SceneManager.GetActiveScene ().name);
+    }
+
+    public static void QuitToDesktop () {
+        Application.Quit ();
+    }
 }

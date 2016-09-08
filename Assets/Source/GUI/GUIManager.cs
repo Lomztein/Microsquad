@@ -3,7 +3,10 @@ using System.Collections;
 
 public class GUIManager : MonoBehaviour {
 
-    public GUIManager cur;
+    public static GUIManager cur;
+
+    [Header ("GUI Objects")]
+    public GameObject gameOverScreen;
 
     public static Canvas mainCanvas;
 
@@ -13,8 +16,7 @@ public class GUIManager : MonoBehaviour {
         mainCanvas = GetComponent<Canvas> ();
 	}
 	
-	// Update is called once per frame
-	void Update () {
-	
-	}
+	public void ShowGameOverScreen () {
+        gameOverScreen.SetActive (true);
+    }
 }

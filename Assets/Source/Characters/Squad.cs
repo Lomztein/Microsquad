@@ -20,6 +20,10 @@ public class Squad : MonoBehaviour {
 	public void RemoveMember (Squadmember member) {
 		members.Remove (member);
 		member.squad = null;
+
+        if (members.Count == 0) {
+            GUIManager.cur.ShowGameOverScreen ();
+        }
 	}
 
 }

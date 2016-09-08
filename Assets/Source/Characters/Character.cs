@@ -418,7 +418,7 @@ public class CharacterEquipment {
         public bool dropOnDeath;
 
         public InspectorSide side;
-        public Sprite defualtSlotImage;
+        public Texture defualtSlotImage;
 
 		public Character character;
 

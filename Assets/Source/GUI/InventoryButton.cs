@@ -5,11 +5,11 @@ using UnityEngine.UI;
 public class InventoryButton : Button {
 
     public Inventory.Slot slot;
-    public Image itemImage;
+    public RawImage itemImage;
     public Text countText;
 
     public void Init (Inventory.Slot buttonSlot) {
-        itemImage = GetComponentsInChildren<Image> ()[1];
+        itemImage = GetComponentInChildren<RawImage> ();
         countText = GetComponentInChildren<Text> ();
         slot = buttonSlot;
     }
@@ -18,10 +18,10 @@ public class InventoryButton : Button {
         if (slot.item) {
             itemImage.gameObject.SetActive (true);
 
-            if (slot.item.prefab.icon)
-                itemImage.sprite = slot.item.prefab.icon;
+            if (slot.item)
+                itemImage.texture = slot.item.GetIcon ();
             else
-                itemImage.sprite = Resources.Load<Sprite> ("GUI/PlaceholderImage");
+                itemImage.texture = null;
 
             if (slot.count > 1)
                 countText.text = slot.count.ToString ();

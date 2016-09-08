@@ -77,7 +77,7 @@ public class CharacterInspectorGUI : MonoBehaviour {
             butt.inspector = this;
             butt.defaultIcon = cur.defualtSlotImage;
             butt.button = newButton.GetComponent<Button> ();
-            butt.image = newButton.GetComponentsInChildren<Image> ()[1];
+            butt.image = newButton.GetComponentInChildren<RawImage> ();
             butt.text = newButton.GetComponentInChildren<Text> ();
             butt.equipment = cur;
                

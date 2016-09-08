@@ -5,10 +5,10 @@ using UnityEngine.UI;
 public class CharacterInspectorButton : MonoBehaviour {
 
 	public CharacterInspectorGUI inspector;
-	public Sprite defaultIcon;
+	public Texture defaultIcon;
 
 	public Button button;
-    public Image image;
+    public RawImage image;
     public Text text;
 
     public CharacterEquipment.Equipment equipment;
@@ -31,12 +31,12 @@ public class CharacterInspectorButton : MonoBehaviour {
         text.text = "";
 
         if (equipment.item.item) {
-            image.sprite = equipment.item.item.prefab.icon;
+            image.texture = equipment.item.item.GetIcon ();
             if (equipment.item.count > 1) {
                 text.text = equipment.item.count.ToString ();
             }
         } else {
-            image.sprite = defaultIcon;
+            image.texture = defaultIcon;
         }
         PlayerInput.UpdateItemInHand ();
     }

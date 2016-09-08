@@ -9,6 +9,13 @@ public class Squadmember : Character {
 	public Squad squad;
 	public GameObject selectedIndicator;
 
+    new void Awake () {
+        base.Awake ();
+        if (!squad) {
+            GetComponentInParent<Squad> ().AddMember (this);
+        }
+    }
+
 	public void ChangeSelection (bool select) {
 		if (select) {
 			if (!isSelected)
@@ -34,6 +41,7 @@ public class Squadmember : Character {
 
     void OnDeath () {
         ChangeSelection (false);
+        squad.RemoveMember (this);
     }
 
 	void OnDestroy () {

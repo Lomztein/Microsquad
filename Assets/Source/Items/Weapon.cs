@@ -71,27 +71,30 @@ public class Weapon : MonoBehaviour {
 	IEnumerator DoFire (Faction faction, Transform target) {
 
 		chambered = false;
+
 		float f = combinedStats.firerate / (float)muzzles.Length;
 
 		for (int i = 0; i < muzzles.Length; i++) {
+            float recoil = 0f;
 			for (int j = 0; j < combinedStats.bulletAmount; j++) {
 
-				if (target) muzzles[i].LookAt (new Vector3 (target.position.x, transform.position.y, target.position.z));
+                if (target) muzzles[i].LookAt (new Vector3 (target.position.x, transform.position.y, target.position.z));
 				GameObject bul = (GameObject)Instantiate (body.bullet, muzzles[i].position, muzzles[i].rotation);
 				Projectile pro = bul.GetComponent<Projectile>();
 				FeedBulletData (pro, muzzles[i], faction);
 				barrels[i].Flash ();
+                recoil += combinedStats.recoil;
 
 				if (body.fireSound)
 					body.audioSource.PlayOneShot (body.fireSound, Game.soundVolume);
 
-                character.WeaponRecoil (transform.parent, combinedStats.recoil);
 			}
+            character.WeaponRecoil (transform.parent, recoil);
 			body.magazine.currentAmmo--;
-			if (i != muzzles.Length - 1) yield return new WaitForSeconds (f);
+            if (i != muzzles.Length - 1) yield return new WaitForSeconds (f);
 		}
 		Invoke ("Rechamber", combinedStats.firerate);
-	}
+    }
 
 	void Rechamber () {
 		chambered = true;
