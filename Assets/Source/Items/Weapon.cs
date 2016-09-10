@@ -109,5 +109,6 @@ public class Weapon : MonoBehaviour {
 		pro.damage = (int)combinedStats.damage;
 		pro.faction = faction;
 		pro.range = GetOpticSpeed ().y * 1.5f;
+        pro.character = character;
 	}
 }

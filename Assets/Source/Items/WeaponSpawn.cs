@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class WeaponSpawn : PhysicalTool {
+public class WeaponSpawn : EquippedItem {
 
 	public void OnEquip (CharacterEquipment.Equipment.EquipMessage message) {
 		GameObject wep = SavedWeapon.LoadFromString (message.metadata).Build ();
@@ -9,7 +9,9 @@ public class WeaponSpawn : PhysicalTool {
 		wep.transform.rotation = transform.rotation;
 		wep.transform.parent = transform;
         wep.GetComponent<Weapon> ().character = message.character;
-        message.slot.physicalItem = gameObject;
+
+        if (message.slot != null)
+            message.slot.equippedItem = gameObject;
 	}
 
     public void OnUnEquip ( CharacterEquipment.Equipment.EquipMessage message ) {

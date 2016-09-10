@@ -3,7 +3,6 @@ using System.Collections;
 
 public class ItemRender : MonoBehaviour {
 
-    public MeshFilter filter;
     public Camera renderCamera;
     public static int renderSize = 100;
 
@@ -18,25 +17,26 @@ public class ItemRender : MonoBehaviour {
         cur.gameObject.SetActive (true);
 
         Camera renderCamera = cur.renderCamera;
-        MeshFilter meshFilter = cur.filter;
 
         renderCamera.enabled = true;
         renderCamera.aspect = 1f;
 
-        Mesh mesh = item.GetMesh ();
-        if (mesh) {
-            meshFilter.mesh = mesh;
+        GameObject model = item.GetModel ();
+        if (model) {
+
+            model.transform.position = cur.transform.position;
+            model.transform.parent = cur.transform;
 
             RenderTexture renderTexture = new RenderTexture (renderSize, renderSize, 24);
             renderTexture.Create ();
 
-            Vector3 bounds = mesh.bounds.extents;
+            Bounds bounds = GetObjectBounds (model);
 
-            float camSize = Mathf.Max (Mathf.Abs (bounds.y), Mathf.Abs (bounds.z));
+            float camSize = Mathf.Max (Mathf.Abs (bounds.extents.y), Mathf.Abs (bounds.extents.z));
             renderCamera.orthographicSize = camSize;
 
             renderCamera.targetTexture = renderTexture;
-            renderCamera.transform.position = cur.transform.position + Vector3.right - (cur.transform.position - meshFilter.GetComponent<Renderer> ().bounds.center);
+            renderCamera.transform.position = cur.transform.position + Vector3.right - (cur.transform.position - bounds.center);
             renderCamera.Render ();
 
             RenderTexture.active = renderTexture;
@@ -53,6 +53,8 @@ public class ItemRender : MonoBehaviour {
             renderCamera.enabled = false;
             cur.gameObject.SetActive (false);
 
+            model.SetActive (false);
+            Destroy (model);
             return texture;
         }
 
@@ -60,5 +62,21 @@ public class ItemRender : MonoBehaviour {
         cur.gameObject.SetActive (false);
 
         return Resources.Load<Texture2D> ("GUI/PlaceholderImage");
+    }
+
+    public static Bounds GetObjectBounds (GameObject obj) {
+        MeshFilter[] filters = obj.GetComponentsInChildren<MeshFilter> ();
+
+        CombineInstance[] instances = new CombineInstance[filters.Length];
+        for (int i = 0; i < filters.Length; i++) {
+            instances[i].mesh = filters[i].sharedMesh;
+            instances[i].transform = filters[i].transform.localToWorldMatrix;
+        }
+
+        Mesh newMesh = new Mesh ();
+        newMesh.CombineMeshes (instances);
+        newMesh.RecalculateBounds ();
+
+        return newMesh.bounds;
     }
 }

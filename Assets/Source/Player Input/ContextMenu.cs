@@ -10,6 +10,8 @@ public class ContextMenu : MonoBehaviour {
     public ContextMenuElement element;
     public int elementCount;
 
+    public static List<ContextMenu> activeMenus = new List<ContextMenu>();
+
 	public static void Open (ContextMenuElement.Element[] elements, ContextMenuElement behaviour) {
         GameObject panelPrefab = Resources.Load<GameObject> ("GUI/ContextMenu");
 
@@ -27,6 +29,7 @@ public class ContextMenu : MonoBehaviour {
     }
 
     void Initialize (ContextMenuElement.Element[] elements, ContextMenuElement behaviour) {
+        activeMenus.Add (this);
         GameObject buttonPrefab = Resources.Load<GameObject> ("GUI/ContextButton");
 
         element = behaviour;
@@ -42,6 +45,7 @@ public class ContextMenu : MonoBehaviour {
     }
 
     void Destroy () {
+        activeMenus.Remove (this);
         Destroy (gameObject);
     }
 
@@ -54,6 +58,6 @@ public class ContextMenu : MonoBehaviour {
 
     void OnClick (int index) {
         element.OnElementClicked (index);
-        Destroy (gameObject);
+        Destroy ();
     }
 }

@@ -3,13 +3,14 @@ using System.Collections.Generic;
 
 public class Command : ScriptableObject {
 
-	public enum Type { Move, Kill, Defend }
+	public enum Type { Move, Kill, Defend, Interact }
 	public static Color[] colors = new Color[] { Color.green, Color.red, Color.blue };
 
 	public Vector3 position;
 	public Transform target;
 	public float time;
 	public Type type;
+    public string metadata;
 
 	void OnDestroy () {
 		if (target && target.tag == "CommandPointer")
@@ -22,12 +23,14 @@ public class Command : ScriptableObject {
         return position;
     }
 
-    public static Command MoveCommand ( Vector3 start, Vector3 end, float speed, Character character ) {
+    // Todo, create a "Basic command", which just fills out the command informtion with basic data.
+
+    public static Command MoveCommand ( Vector3 start, Vector3 end, Character character ) {
 
         Command c = Command.CreateInstance<Command> ();
         c.name = "Move: " + end.ToString ();
         float d = Vector3.Distance (start, end);
-        c.time = d / speed;
+        c.time = d / character.speed;
         c.position = end;
         c.type = Type.Move;
         character.AddCommand (c);
@@ -35,20 +38,11 @@ public class Command : ScriptableObject {
         return c;
     }
 
-	public static Command KillCommand (Vector3 start, Transform target, float range, float speed, Character character, float dps, float health) {
-		/*if (Vector3.Distance (start, target.position) > range || !Utility.LineOfSight (start + Vector3.up, target.position + Vector3.up)) {
-            MoveCommand (start, target.position, speed, character);
-		}
-
-        if (character.commands.Count > 0) {
-            Command lastCommand = character.commands[character.commands.Count - 1];
-            if (Vector3.Distance (lastCommand.position, target.position) < 0.5f)
-                character.commands.RemoveAt (character.commands.Count - 1);
-        }*/
+	public static Command KillCommand (Transform target, Character character, float health) {
 
         Command k = Command.CreateInstance <Command> ();
         k.name = "Kill: " + target.name;
-		k.time = dps / health;
+		k.time = character.CalcDPS () / health;
 		k.position = target.position;
 		k.type = Type.Kill;
 		k.target = target;
@@ -56,4 +50,18 @@ public class Command : ScriptableObject {
         return k;
     }
 
+    public static Command InteractCommand (Transform target, Character character, string interactCommand) {
+
+        Command i = Command.CreateInstance<Command> ();
+        i.metadata = interactCommand;
+
+        i.name = "Interact: " + target.name + " with " + interactCommand;
+        i.time = Vector3.Distance (character.transform.position, target.position) / character.speed;
+        i.position = target.position;
+        i.type = Type.Interact;
+        i.target = target;
+        character.AddCommand (i);
+        return i;
+
+    }
 }

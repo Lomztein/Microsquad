@@ -4,7 +4,8 @@ using System.Collections.Generic;
 
 public class Character : Unit {
 
-	public enum State { Idle, Moving, Attacking, Fleeing, Aimless };
+    // TODO: Move all commmand related stuff into a seperate "BasicCharacter" class.
+	public enum State { Idle, Moving, Attacking, Fleeing, Aimless, Interacting };
 
 	[Header ("Basics")]
 	public CharacterController character;
@@ -17,6 +18,8 @@ public class Character : Unit {
 	public CharacterStats stats;
 	private CharacterStats multipliers;
 	public float altitude;
+
+    public bool alert;
 
 	[Header ("Equipment")]
 	public CharacterEquipment equipment;
@@ -150,13 +153,22 @@ public class Character : Unit {
 			}
 
 
-            if (pathToCommand == null && pathToCommand.corners.Length > 0) {
+            if (pathToCommand != null && pathToCommand.corners.Length > 0) {
 
-                Vector3 t = new Vector3 (targetPos.x, 0f, targetPos.z);
+                Vector3 t = new Vector3 (target.position.x, 0f, target.position.z);
                 Vector3 d = new Vector3 (pathToCommand.corners[pathToCommand.corners.Length - 1].x, 0f, pathToCommand.corners[pathToCommand.corners.Length - 1].z);
 
                 if (Vector3.Distance (t, d) > 0.1f) {
+                    commands[0].position = target.position;
                     FindPathToCommand ();
+                }
+            }
+
+            if (state == State.Interacting) {
+                MoveTowardsCommand ();
+                if (Vector3.Distance (target.position, transform.position) < 3f) {
+                    target.SendMessage (currentCommand.metadata);
+                    CompleteCommand ();
                 }
             }
 
@@ -223,7 +235,7 @@ public class Character : Unit {
     private void FindPathToCommand () {
         pathToCommand = new NavMeshPath ();
         navigationAgent.CalculatePath (commands[0].position, pathToCommand);
-        pathIndex = 0;
+        pathIndex = 1;
     }
 
 	void MoveTowardsPosition (Vector3 position) {
@@ -304,11 +316,17 @@ public class Character : Unit {
 		currentCommand = commands [0];
 		if (currentCommand.type == Command.Type.Move) {
 			DoMoveCommand ();
+            Game.AddMessage (unitName + " moves to " + currentCommand.position.ToString ());
 		}
 		if (currentCommand.type == Command.Type.Kill) {
 			DoKillCommand ();
-		}
-	}
+            Game.AddMessage (unitName + " goes for the kill.");
+        }
+        if (currentCommand.type == Command.Type.Interact) {
+            DoInteractCommand ();
+            Game.AddMessage (unitName + " goes to interact.");
+        }
+    }
 
 	void DoMoveCommand () {
 	    targetPos = currentCommand.position;
@@ -319,21 +337,62 @@ public class Character : Unit {
 
 	void DoKillCommand () {
 		target = currentCommand.target;
+        targetPos = target.position;
 	    state = State.Attacking;
         FindPathToCommand ();
     }
 
+    void DoInteractCommand () {
+        // Because DoKillCommand is so similar, we just call that and change state to "Interacting".
+        DoKillCommand ();
+        state = State.Interacting;
+    }
+
     public void OnEquip (CharacterEquipment.Equipment slot, GameObject equipment) {
-		Weapon wep = equipment.GetComponentInChildren<Weapon>();
-		if (wep) {
-			activeWeapons.Add (wep);
-			animator.SetInteger ("WeaponType", 1);
-		}
-	}
+        UpdatePose ();
+        Weapon wep = equipment.GetComponentInChildren<Weapon> ();
+        if (wep)
+            activeWeapons.Add (wep);
+    }
+
+    public void OnDeEquip () {
+        UpdatePose ();
+    }
+
+    void UpdatePose () {
+        GameObject tool = FindSlotByType (CharacterEquipment.Slot.Hand).equippedItem;
+        Weapon wep = tool.GetComponentInChildren<Weapon> ();
+        if (wep) {
+            int type = 0;
+            switch (wep.body.animationType) {
+                case WeaponBody.AnimType.Pistol:
+                    type = 2;
+                    break;
+
+                case WeaponBody.AnimType.Rifle:
+                    type = 3;
+                    break;
+
+                default:
+                    type = 0;
+                    break;
+            }
+
+            animator.SetInteger ("ToolType", type);
+        } else {
+            EquippedItem i = tool.GetComponent<EquippedItem> ();
+            if (i) {
+                if (i.type == EquippedItem.Type.Tool) {
+                    animator.SetInteger ("ToolType", 1);
+                }
+            }else
+                animator.SetInteger ("ToolType", 0);
+        }
+    }
 
     void DropLooseEquipment () {
         foreach (CharacterEquipment.Equipment e in equipment.slots) {
-            if (e.dropOnDeath) {
+            if (e.item.item && e.dropOnDeath) {
                 Game.game.StartCoroutine (e.Drop (0.1f));
             }
         }
@@ -391,7 +450,7 @@ public struct CharacterStats {
 	public float speed;
     public float recoilRecovery;
 
-	public CharacterStats (float _strength = 1f, float _accuracy = 1f, float _speed = 1f, float _recoilRecovery = 15f) {
+    public CharacterStats (float _strength = 1f, float _accuracy = 1f, float _speed = 1f, float _recoilRecovery = 15f) {
 		strength = _strength;
 		accuracy = _accuracy;
 		speed = _speed;
@@ -413,7 +472,7 @@ public class CharacterEquipment {
         public string name;
 		public Slot slot;
 		public Inventory.Slot item;
-		public GameObject physicalItem;
+		public GameObject equippedItem;
 		public Transform transform;
         public bool dropOnDeath;
 
@@ -423,9 +482,10 @@ public class CharacterEquipment {
 		public Character character;
 
         public virtual void Update () {
-            if (physicalItem) {
-                physicalItem.SendMessage ("OnUnEquip", new EquipMessage (character, "", this));
-                Object.Destroy (physicalItem);
+            if (equippedItem) {
+                equippedItem.SendMessage ("OnUnEquip", new EquipMessage (character, "", this), SendMessageOptions.DontRequireReceiver);
+                character.OnDeEquip ();
+                Object.Destroy (equippedItem);
             }
 
             if (item && item.item) {
@@ -434,6 +494,8 @@ public class CharacterEquipment {
                 newTool.transform.position = transform.position;
                 newTool.transform.rotation = transform.rotation;
                 newTool.transform.parent = transform;
+
+                equippedItem = newTool;
                     
                 newTool.SendMessage ("OnEquip", new EquipMessage (character, item.item.metadata, this));
                 character.OnEquip (this, newTool);

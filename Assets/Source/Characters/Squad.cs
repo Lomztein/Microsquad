@@ -15,15 +15,18 @@ public class Squad : MonoBehaviour {
 	public void AddMember (Squadmember member) {
 		members.Add (member);
 		member.squad = this;
-	}
+        Game.AddMessage (member.unitName + " has joined the squad.");
+    }
 
-	public void RemoveMember (Squadmember member) {
+    public void RemoveMember (Squadmember member) {
 		members.Remove (member);
 		member.squad = null;
 
         if (members.Count == 0) {
             GUIManager.cur.ShowGameOverScreen ();
         }
+
+        Game.AddMessage (member.unitName + " has left the squad.");
 	}
 
 }

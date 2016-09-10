@@ -12,18 +12,26 @@ public class Squadmember : Character {
     new void Awake () {
         base.Awake ();
         if (!squad) {
-            GetComponentInParent<Squad> ().AddMember (this);
+            Squad spawnSquad = GetComponentInParent<Squad> ();
+            if (spawnSquad)
+                spawnSquad.AddMember (this);
         }
     }
 
 	public void ChangeSelection (bool select) {
+        if (!squad)
+            return;
+        
 		if (select) {
-			if (!isSelected)
-				PlayerInput.selectedUnits.Add (this);
-		}else{
-			if (isSelected)
+            if (!isSelected)
+                PlayerInput.selectedUnits.Add (this);
+        } else {
+			if (isSelected) {
+                if (ContextMenu.activeMenus.Count != 0)
+                    return;
 				PlayerInput.selectedUnits.Remove (this);
-		}
+            }
+        }
 
 		isSelected = select;
 		selectedIndicator.SetActive (select);

@@ -1,9 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class PhysicalTool : MonoBehaviour {
+public class EquippedItem : MonoBehaviour {
 
-	public enum Type { Weapon, Toggle };
+	public enum Type { Tool, Armor, Accessory };
 	public Type type;
 
 	public virtual void OnEquip () {

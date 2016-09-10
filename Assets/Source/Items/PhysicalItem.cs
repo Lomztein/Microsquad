@@ -4,7 +4,7 @@ using System.Collections;
 public class PhysicalItem : MonoBehaviour {
 
 	public Inventory.Slot singleSlot;
-    public MeshFilter meshFilter;
+    public GameObject model;
     public BoxCollider boxCollider;
 
     [Header ("Spawn with")]
@@ -31,10 +31,12 @@ public class PhysicalItem : MonoBehaviour {
     }
 
     void UpdateMesh () {
-        Mesh mesh = singleSlot.item.GetMesh ();
-        meshFilter.mesh = mesh;
-        mesh.RecalculateBounds ();
+        model = singleSlot.item.GetModel ();
 
-        boxCollider.size = mesh.bounds.size;
+        model.transform.parent = transform;
+        model.transform.position = transform.position;
+        model.transform.rotation = transform.rotation;
+
+        boxCollider.size = ItemRender.GetObjectBounds (model).size;
     }
 }

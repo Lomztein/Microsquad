@@ -54,6 +54,8 @@ public class Settings : MonoBehaviour {
             debugIndex = -1;
             if (PlayerInput.itemInHand)
                 GUI.Label (GetDebugPosition (), "Item in hand: " + PlayerInput.itemInHand.ToString ());
+
+            GUI.Label (GetDebugPosition (), "Active context menus: " + ContextMenu.activeMenus.Count);
         }
     }
 

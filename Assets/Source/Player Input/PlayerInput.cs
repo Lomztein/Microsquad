@@ -44,8 +44,8 @@ public class PlayerInput : MonoBehaviour {
 	}
 
 	void DeselectAllUnits () {
-		for (int i = 0; i < selectedUnits.Count; i++) {
-			selectedUnits[i].ChangeSelection (false);
+        for (int i = 0; i < selectedUnits.Count; i++) {
+		    selectedUnits[i].ChangeSelection (false);
 		}
 	}
 
@@ -212,7 +212,7 @@ public class PlayerInput : MonoBehaviour {
 					if (!Input.GetButton ("Shift"))
 					    member.ClearCommands ();
 							
-					Command.MoveCommand (startPos, pos, member.speed, member);
+					Command.MoveCommand (startPos, pos, member);
 				}
 			}
 		}
@@ -226,7 +226,7 @@ public class PlayerInput : MonoBehaviour {
 					if (!Input.GetButton ("Shift"))
 						member.ClearCommands ();
 
-					Command.KillCommand (startPos, unit.transform, member.CalcOptics ().y, member.speed, member, member.CalcDPS (), unit.health);
+					Command.KillCommand (unit.transform, member, unit.health);
 				}
 			}
 		}
@@ -263,10 +263,18 @@ public class PlayerInput : MonoBehaviour {
     }
 
     public static void UpdateItemInHand () {
-        MeshFilter filter = cur.representativeObject.GetComponent<MeshFilter> ();
+        Transform rep = cur.representativeObject.transform;
+        foreach (Transform child in rep)
+            Destroy (child.gameObject);
+
         if (itemInHand.item) {
             cur.representativeObject.SetActive (true);
-            filter.mesh = itemInHand.item.GetMesh ();
+
+            GameObject newModel = itemInHand.item.GetModel ();
+
+            newModel.transform.parent = rep;
+            newModel.transform.position = rep.position;
+            newModel.transform.rotation = rep.rotation;
         } else {
             cur.representativeObject.SetActive (false);
         }

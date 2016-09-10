@@ -21,7 +21,6 @@ public class Micromanagement : MonoBehaviour {
 			}
 
 			radius += unitSize;
-			
 		}
 		return positions;
 	}

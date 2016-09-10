@@ -7,6 +7,7 @@ public class Game : MonoBehaviour {
 
 	[Header ("Game Information")]
 	public Squad currentSquad;
+    public static string commanderName = "The Commander";
 
 	[Header ("References")]
 	public static Game game;
@@ -80,7 +81,13 @@ public class Game : MonoBehaviour {
 	void Awake () {
 		game = this;
 		SavePreferences ();
+        DialogGUI.RestartCoroutine (IntroDialog ());
 	}
+
+    IEnumerator IntroDialog () {
+        yield return DialogGUI.RunDialog (Game.commanderName, "In here, in the forgotten prison of the ancient past, I might be able to find someone to join my cause of overthrowing the ancient evil of ancientness.",
+            "Any of the prisoners in here must surely be enemies of my enemy, and therefore an ally.", "I must right click on them with my hypothetical mouse, and click \"Recruit\" to recruit one.");
+    }
 
 	void OnGUI () {
 		for (int i = 0; i < messages.Count; i++) {

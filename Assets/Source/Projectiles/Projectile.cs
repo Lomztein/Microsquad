@@ -9,6 +9,7 @@ public class Projectile : MonoBehaviour {
 	public Faction faction;
 	public float range;
 	public LayerMask layer;
+    public Character character;
 
 	void FixedUpdate () {
 		CastRay ();
@@ -26,11 +27,11 @@ public class Projectile : MonoBehaviour {
 			Character oc = hit.collider.GetComponent<Character>();
 			if (oc) {
 				if (oc.faction != Faction.Scavengers) {
-					oc.SendMessage ("OnTakeDamage", new Damage (damage, force, null, hit.point), SendMessageOptions.DontRequireReceiver);
+					oc.SendMessage ("OnTakeDamage", new Damage (damage, force, character, hit.point), SendMessageOptions.DontRequireReceiver);
 					Destroy (gameObject);
 				}
 			}else{
-				hit.collider.SendMessage ("OnTakeDamage", new Damage (damage, force, null, hit.point), SendMessageOptions.DontRequireReceiver);
+				hit.collider.SendMessage ("OnTakeDamage", new Damage (damage, force, character, hit.point), SendMessageOptions.DontRequireReceiver);
 				Destroy (gameObject);
 			}
 		}

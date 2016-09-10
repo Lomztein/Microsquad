@@ -8,12 +8,15 @@ public class StartingEquipment : MonoBehaviour {
     public Piece[] inventoryPieces;
     public List<Inventory.Slot> tempSlots;
 
+    public bool applyOnStart = true;
+
 	// Use this for initialization
 	void Start () {
-        ApplyInventory ();
+        if (applyOnStart)
+            ApplyInventory ();
 	}
 
-    void ApplyInventory () {
+    public void ApplyInventory () {
         Character character = GetComponent<Character> ();
         if (character) {
             foreach (Piece p in equipmentPieces) {

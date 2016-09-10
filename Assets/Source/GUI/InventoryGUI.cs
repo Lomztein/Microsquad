@@ -37,4 +37,10 @@ public class InventoryGUI : MonoBehaviour {
     void AddButtonListener (Button button, int index) {
         button.onClick.AddListener (() => OnButtonClicked (index));
     }
+
+    public void ForceUpdateAll () {
+        for (int i = 0; i < buttons.Length; i++) {
+            buttons[i].UpdateButton ();
+        }
+    }
 }

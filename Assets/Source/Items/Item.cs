@@ -26,6 +26,26 @@ public class Item : ScriptableObject {
         return cachedMesh;
     }
 
+    public virtual GameObject GetModel () {
+        // To get a representative model of the object, the gameObject is spawned, and all except for rendering and transform is removed from it.
+        GameObject obj = Instantiate (prefab.gameObject);
+        obj.SendMessage ("OnEquip", new CharacterEquipment.Equipment.EquipMessage (null, metadata, null));
+        Transform[] all = obj.GetComponentsInChildren<Transform> ();
+        for (int i = 0; i < all.Length; i++) {
+            Component[] components = all[i].GetComponents<Component> ();
+            for (int j = 0; j < components.Length; j++) {
+                Component c = components[j];
+                if (c as Transform == null &&
+                    c as MeshFilter == null &&
+                    c as Renderer == null) {
+                    Destroy (c);
+                }
+            }
+        }
+
+        return obj;
+    }
+
     private bool HasChanged (Object cachedObject) {
         return (metadata != metaOnSave || !cachedObject);
     }

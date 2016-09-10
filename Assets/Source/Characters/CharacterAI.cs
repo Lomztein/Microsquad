@@ -12,6 +12,11 @@ public class CharacterAI : MonoBehaviour {
 	public Character character;
 	public GameObject objective;
 
+    /// <summary>
+    /// The range at which the AI will automatically engage an enemy.
+    /// </summary>
+    public float sightRange = 25f;
+
 	/*
 	 * The general gist of this AI is pretty basic, as
 	 * more advanced AI will inherit from this class.
@@ -41,11 +46,10 @@ public class CharacterAI : MonoBehaviour {
             if (character.commands.Count == 0) {
                 switch (stance) {
                     case Stance.Guard:
-                        FindTarget ();
                         if (character.target) {
                             AttackTarget ();
                         } else {
-                            character.state = Character.State.Moving;
+                            FindTarget ();
                         }
                         break;
                 }
@@ -54,17 +58,38 @@ public class CharacterAI : MonoBehaviour {
 	}
 
 	void AttackTarget () {
-        Command.KillCommand (transform.position, character.target, character.CalcOptics ().y, character.speed, character, character.CalcDPS (), character.health);
+        AttackTarget (character.target);
 	}
 
-	void FindTarget () {
-		character.target = TargetFinder.FindTarget (transform, transform.position, character.CalcOptics ().y * 1.5f, Game.game.all - Game.game.layers[(int)character.faction], character);
+    void AttackTarget (Transform target) {
+        Command.KillCommand (target, character, character.health);
+    }
+
+    void FindTarget () {
+		character.target = TargetFinder.FindTarget (transform, transform.position, sightRange, Game.game.all - Game.game.layers[(int)character.faction], character);
 	}
 
 	void OnDrawGizmos () {
 		if (character.target) Gizmos.DrawSphere (character.target.position, 0.25f);
 		Gizmos.DrawWireSphere (character.targetPos, 0.25f);
 	}
+
+    void OnTakeDamage ( Damage d ) {
+        if (d.character) {
+            AttackTarget (d.character.transform);
+            if (character.target != d.character.transform)
+                AlertNearbyAllies (d.character.transform);
+        }
+    }
+
+    void AlertNearbyAllies (Transform attacker) {
+        Collider[] allies = Physics.OverlapSphere (transform.position, sightRange, Game.FactionLayer (character.faction));
+        for (int i = 0; i < allies.Length; i++) {
+            CharacterAI ch = allies[i].GetComponent<CharacterAI> ();
+            if (ch && Utility.LineOfSight (transform.position + Vector3.up, ch.transform.position + Vector3.up))
+                    ch.AttackTarget (attacker);
+        }
+    }
 }
 
 public class TargetFinder {
