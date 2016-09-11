@@ -233,6 +233,9 @@ public class SavedWeapon : ScriptableObject {
 	}
 
 	public static SavedWeapon LoadFromString (string parse) {
+        if (parse.ToUpper () == "RANDOM")
+            parse = WeaponGenerator.cur.GenerateRandomWeaponData ();
+
 		string[] numbers = parse.Split (':');
 		SavedWeapon wep = SavedWeapon.CreateInstance<SavedWeapon>();
 		wep.classID = int.Parse (numbers[0]);

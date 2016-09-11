@@ -32,11 +32,10 @@ public class PhysicalItem : MonoBehaviour {
 
     void UpdateMesh () {
         model = singleSlot.item.GetModel ();
+        boxCollider.size = ItemRender.GetObjectBounds (model).size;
 
         model.transform.parent = transform;
         model.transform.position = transform.position;
         model.transform.rotation = transform.rotation;
-
-        boxCollider.size = ItemRender.GetObjectBounds (model).size;
     }
 }

@@ -41,6 +41,9 @@ public class WeaponBody : WeaponPart {
 	public AudioSource audioSource;
 	public AudioClip fireSound;
 
+    [Header ("Particle")]
+    public ParticleSystem casingEjector;
+
 	public void BuildWeapon () {
 		// Yeah this is pretty shit. It'll do, though.
 

@@ -3,13 +3,17 @@ using System.Collections;
 
 public class Projectile : MonoBehaviour {
 
+    public int bulletAmount = 1;
 	public float speed;
 	public Vector3 velocity;
-	public int damage;
+	public float weight;
 	public Faction faction;
 	public float range;
 	public LayerMask layer;
     public Character character;
+
+    public Mesh spentCasing;
+    public Material spentCasingMaterial;
 
 	void FixedUpdate () {
 		CastRay ();
@@ -23,20 +27,24 @@ public class Projectile : MonoBehaviour {
 		RaycastHit hit;
 
 		if (Physics.Raycast (ray, out hit, velocity.magnitude * Time.fixedDeltaTime, layer)) {
-			Vector3 force = velocity * damage / 10f;
+			Vector3 force = velocity * CalcDamage () / 10f;
 			Character oc = hit.collider.GetComponent<Character>();
 			if (oc) {
 				if (oc.faction != Faction.Scavengers) {
-					oc.SendMessage ("OnTakeDamage", new Damage (damage, force, character, hit.point), SendMessageOptions.DontRequireReceiver);
+					oc.SendMessage ("OnTakeDamage", new Damage (CalcDamage (), force, character, hit.point), SendMessageOptions.DontRequireReceiver);
 					Destroy (gameObject);
 				}
 			}else{
-				hit.collider.SendMessage ("OnTakeDamage", new Damage (damage, force, character, hit.point), SendMessageOptions.DontRequireReceiver);
+				hit.collider.SendMessage ("OnTakeDamage", new Damage (CalcDamage (), force, character, hit.point), SendMessageOptions.DontRequireReceiver);
 				Destroy (gameObject);
 			}
 		}
 
 	}
+
+    public int CalcDamage () {
+        return Mathf.RoundToInt (weight * speed);
+    }
 }
 
 public struct Damage {

@@ -7,26 +7,12 @@ public class Item : ScriptableObject {
     public string metadata;
 
     private string metaOnSave;
-    private Mesh cachedMesh = null;
     private Texture2D cachedIcon = null;
 
-    public virtual Mesh GetMesh () {
-        Mesh mesh = null;
-        if (prefab.type == ItemPrefab.Type.Weapon) {
-            mesh = WeaponGenerator.GenerateWeaponMesh (metadata);
-        }else
-            mesh = prefab.model;
-
-        // If change is detected or no cached exists, cache new mesh.
-        if (HasChanged (cachedMesh)) {
-            metaOnSave = metadata;
-            cachedMesh = mesh;
-        }
-
-        return cachedMesh;
-    }
-
     public virtual GameObject GetModel () {
+        if (prefab.model)
+            return Instantiate (prefab.model);
+
         // To get a representative model of the object, the gameObject is spawned, and all except for rendering and transform is removed from it.
         GameObject obj = Instantiate (prefab.gameObject);
         obj.SendMessage ("OnEquip", new CharacterEquipment.Equipment.EquipMessage (null, metadata, null));

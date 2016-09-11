@@ -360,6 +360,9 @@ public class Character : Unit {
     }
 
     void UpdatePose () {
+        if (isDead)
+            return;
+
         GameObject tool = FindSlotByType (CharacterEquipment.Slot.Hand).equippedItem;
         Weapon wep = tool.GetComponentInChildren<Weapon> ();
         if (wep) {

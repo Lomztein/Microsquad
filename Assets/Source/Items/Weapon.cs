@@ -16,6 +16,8 @@ public class Weapon : MonoBehaviour {
 	public List<WeaponPart> weaponParts;
 	public string parse;
 
+    private Projectile currentProjectile;
+
 	private bool chambered = true;
 
 	void Start () {
@@ -23,7 +25,7 @@ public class Weapon : MonoBehaviour {
 	}
 
 	public float CalcDPS () {
-		float damage = body.bullet.GetComponent<Projectile>().damage;
+		float damage = body.bullet.GetComponent<Projectile>().CalcDamage ();
 		return damage / combinedStats.firerate * muzzles.Length;
 	}
 
@@ -76,7 +78,7 @@ public class Weapon : MonoBehaviour {
 
 		for (int i = 0; i < muzzles.Length; i++) {
             float recoil = 0f;
-			for (int j = 0; j < combinedStats.bulletAmount; j++) {
+			for (int j = 0; j < currentProjectile.bulletAmount; j++) {
 
                 if (target) muzzles[i].LookAt (new Vector3 (target.position.x, transform.position.y, target.position.z));
 				GameObject bul = (GameObject)Instantiate (body.bullet, muzzles[i].position, muzzles[i].rotation);
@@ -91,6 +93,9 @@ public class Weapon : MonoBehaviour {
 			}
             character.WeaponRecoil (transform.parent, recoil);
 			body.magazine.currentAmmo--;
+
+            if (body.casingEjector)
+                body.casingEjector.Emit (1);
             if (i != muzzles.Length - 1) yield return new WaitForSeconds (f);
 		}
 		Invoke ("Rechamber", combinedStats.firerate);
@@ -106,7 +111,6 @@ public class Weapon : MonoBehaviour {
 			+ muzzle.up * Random.Range (-combinedStats.spread, combinedStats.spread)
 				+ muzzle.right * Random.Range (-combinedStats.spread, combinedStats.spread);
 
-		pro.damage = (int)combinedStats.damage;
 		pro.faction = faction;
 		pro.range = GetOpticSpeed ().y * 1.5f;
         pro.character = character;
