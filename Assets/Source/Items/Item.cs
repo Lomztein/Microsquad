@@ -6,6 +6,9 @@ public class Item : ScriptableObject {
     public ItemPrefab prefab;
     public string metadata;
 
+    // With items, attributes should only be used if metadata is already used, since it's likely faster to use the metadata.
+    public ObjectAttribute attributes = new ObjectAttribute ();
+
     private string metaOnSave;
     private Texture2D cachedIcon = null;
 

@@ -16,6 +16,8 @@ public class Weapon : MonoBehaviour {
 	public List<WeaponPart> weaponParts;
 	public string parse;
 
+    public Inventory.Slot characterAmmoSlot;
+
     private Projectile currentProjectile;
 
 	private bool chambered = true;
@@ -25,7 +27,7 @@ public class Weapon : MonoBehaviour {
 	}
 
 	public float CalcDPS () {
-		float damage = body.bullet.GetComponent<Projectile>().CalcDamage ();
+		float damage = body.currentAmmoPrefab.gameObject.GetComponent<Projectile>().CalcDamage ();
 		return damage / combinedStats.firerate * muzzles.Length;
 	}
 
@@ -58,17 +60,54 @@ public class Weapon : MonoBehaviour {
 	}
 
 	public void Fire (Faction faction, Transform target) {
-		if (chambered &&
-		    body.magazine.currentAmmo > 0) {
+        bool hasAmmo = characterAmmoSlot == null ? true : characterAmmoSlot.count != 0;
+		if (chambered && hasAmmo) {
 			StartCoroutine (DoFire (faction, target));
-		}else if (body.magazine.currentAmmo == 0) {
+		}else if (!hasAmmo) {
 			Invoke ("Reload", body.magazine.reloadTime);
 		}
 	}
 
-	void Reload () {
-		body.magazine.currentAmmo = body.magazine.maxAmmo;
-	}
+    public void UpdateAmmunition () {
+        if (character) {
+            CharacterEquipment.Equipment equipment = character.FindSlotByType (CharacterEquipment.Slot.Ammo);
+            if (equipment != null)
+                characterAmmoSlot = equipment.item;
+        }
+
+        if (characterAmmoSlot != null && characterAmmoSlot.item)
+            body.currentAmmoPrefab = characterAmmoSlot.item.prefab;
+        currentProjectile = body.currentAmmoPrefab.gameObject.GetComponent<Projectile> ();
+    }
+
+    public void Reload () {
+        // When the weapon needs to reload, it first searches its parent character for an ammo slot.
+        // If no ammo slot is found, it simply reloads all bullets, so that certain characters can have infinite ammo if needed.
+        // How it will handle which projectile is used I haven't found out yet, perhaps use an AmmoPrefab object to define that.
+        CharacterEquipment.Equipment slot = character.FindSlotByType (CharacterEquipment.Slot.Ammo);
+        if (slot == null) {
+            body.magazine.currentAmmo = body.magazine.maxAmmo;
+            return;
+        }
+
+        // Max tries should be removed once this function has been tested to not create infinite loops.
+        int maxTries = 1024;
+        while (body.magazine.currentAmmo != body.magazine.maxAmmo && maxTries > 0) {
+            Inventory.Slot ammoSlot = character.inventory.FindItemByPrefab (body.currentAmmoPrefab);
+            int needed = Mathf.Min (body.magazine.maxAmmo - ammoSlot.count, ammoSlot.count);
+
+            body.magazine.currentAmmo += needed;
+
+            if (characterAmmoSlot) {
+                character.ChangeEquipment (CharacterEquipment.Slot.Ammo, slot, ammoSlot);
+            }
+
+            maxTries--;
+
+            if (maxTries == 1024)
+                Debug.Log ("Max tries rached, faggot");
+        }
+    }
 
 	IEnumerator DoFire (Faction faction, Transform target) {
 
@@ -81,7 +120,7 @@ public class Weapon : MonoBehaviour {
 			for (int j = 0; j < currentProjectile.bulletAmount; j++) {
 
                 if (target) muzzles[i].LookAt (new Vector3 (target.position.x, transform.position.y, target.position.z));
-				GameObject bul = (GameObject)Instantiate (body.bullet, muzzles[i].position, muzzles[i].rotation);
+				GameObject bul = (GameObject)Instantiate (body.currentAmmoPrefab.gameObject, muzzles[i].position, muzzles[i].rotation);
 				Projectile pro = bul.GetComponent<Projectile>();
 				FeedBulletData (pro, muzzles[i], faction);
 				barrels[i].Flash ();
@@ -92,10 +131,13 @@ public class Weapon : MonoBehaviour {
 
 			}
             character.WeaponRecoil (transform.parent, recoil);
-			body.magazine.currentAmmo--;
+
+            if (characterAmmoSlot)
+			    characterAmmoSlot.ChangeCount (-1);
 
             if (body.casingEjector)
                 body.casingEjector.Emit (1);
+
             if (i != muzzles.Length - 1) yield return new WaitForSeconds (f);
 		}
 		Invoke ("Rechamber", combinedStats.firerate);

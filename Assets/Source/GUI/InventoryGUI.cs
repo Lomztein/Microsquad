@@ -14,7 +14,7 @@ public class InventoryGUI : MonoBehaviour {
     }
 
 	public virtual void OnButtonClicked (int buttonIndex) {
-        inventory.slots[buttonIndex].MoveItem (PlayerInput.itemInHand);
+        inventory.slots[buttonIndex].MoveItem (PlayerInput.itemInHand, -1, true);
         buttons[buttonIndex].UpdateButton ();
         PlayerInput.UpdateItemInHand ();
     }
@@ -27,6 +27,8 @@ public class InventoryGUI : MonoBehaviour {
             newButton.transform.SetParent (buttonParent);
 
             InventoryButton button = newButton.GetComponent<InventoryButton> ();
+            inventory.slots[i].inventoryButton = newButton;
+
             button.Init (inventory.slots[i]);
             button.UpdateButton ();
             buttons[i] = button;

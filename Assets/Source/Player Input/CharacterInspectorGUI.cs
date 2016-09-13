@@ -80,6 +80,8 @@ public class CharacterInspectorGUI : MonoBehaviour {
             butt.image = newButton.GetComponentInChildren<RawImage> ();
             butt.text = newButton.GetComponentInChildren<Text> ();
             butt.equipment = cur;
+
+            cur.item.inventoryButton = newButton;
                
             butt.button.onClick.AddListener (() => butt.OnClick());
 

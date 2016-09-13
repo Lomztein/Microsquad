@@ -13,6 +13,7 @@ public class Squad : MonoBehaviour {
 	}
 
 	public void AddMember (Squadmember member) {
+        member.inventory = sharedInventory;
 		members.Add (member);
 		member.squad = this;
         Game.AddMessage (member.unitName + " has joined the squad.");

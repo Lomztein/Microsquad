@@ -8,13 +8,24 @@ public class WeaponSpawn : EquippedItem {
 		wep.transform.position = transform.position;
 		wep.transform.rotation = transform.rotation;
 		wep.transform.parent = transform;
-        wep.GetComponent<Weapon> ().character = message.character;
 
-        if (message.slot != null)
-            message.slot.equippedItem = gameObject;
+        Weapon w = wep.GetComponent<Weapon> ();
+        if (message.character) {
+            w.character = message.character;
+            CharacterEquipment.Equipment slot = message.character.FindSlotByType (CharacterEquipment.Slot.Ammo);
+            if (slot != null)
+                w.characterAmmoSlot = slot.item;
+
+            if (message.slot != null)
+                message.slot.equippedItem = gameObject;
+
+            w.Reload ();
+        }
+
+        w.UpdateAmmunition ();
 	}
 
     public void OnUnEquip ( CharacterEquipment.Equipment.EquipMessage message ) {
-        message.character.activeWeapons.Remove (GetComponentInChildren<Weapon>());
+        message.character.activeWeapon = null;
     }
 }

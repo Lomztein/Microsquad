@@ -9,7 +9,7 @@ public class AmmoPrefab : ItemPrefab {
 
     public static explicit operator Item ( AmmoPrefab prefab ) {
         Item item = (Item)prefab;
-        item.metadata = prefab.ammoType.ToString ();
+        item.attributes.AddAttribute ("AmmoType", prefab.ammoType);
         return item;
     }
 

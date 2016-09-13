@@ -24,7 +24,7 @@ public class Character : Unit {
 	[Header ("Equipment")]
 	public CharacterEquipment equipment;
 	public Inventory inventory;
-	public List<Weapon> activeWeapons;
+	public Weapon activeWeapon;
     public CharacterEquipment.Equipment toolSlot;
 
 	[Header ("Commands")]
@@ -80,38 +80,48 @@ public class Character : Unit {
     }
 
 	public float CalcDPS () {
-		float val = 0f;
-		for (int i = 0; i < activeWeapons.Count; i++) {
-			val += activeWeapons[i].CalcDPS ();
-		}
-		return val;
+        if (activeWeapon)
+            return activeWeapon.CalcDPS ();
+        return 0;
 	}
 
 	public Vector2 CalcOptics () {
-		Vector2 val = Vector2.zero;
-		for (int i = 0; i < activeWeapons.Count; i++) {
-			val += activeWeapons[i].GetOpticSpeed ();
-		}
-		return val;
-	}
+        if (activeWeapon)
+            return activeWeapon.GetOpticSpeed ();
+        return Vector2.zero;
+    }
 
-	public void ChangeEquipment (CharacterEquipment.Slot slotType, CharacterEquipment.Equipment slot, Inventory.Slot newSlot) {
+    public void ChangeEquipment (CharacterEquipment.Slot slotType, CharacterEquipment.Equipment slot, Inventory.Slot newSlot) {
 		if (newSlot.item && slotType != newSlot.item.prefab.slotType)
 			return;
+
+        // Handle specifics when swapping ammunition.
+        if (slotType == CharacterEquipment.Slot.Ammo) {
+            AmmoPrefab.AmmoType ammoType = newSlot.item.attributes.GetAttribute<AmmoPrefab.AmmoType> ("AmmoType");
+            Debug.Log (ammoType);
+
+            if (activeWeapon) {
+                if (activeWeapon.body.ammoType == ammoType) {
+                    newSlot.MoveItem (slot.item, activeWeapon.body.magazine.maxAmmo, true);
+                }
+                UpdateAmmunition ();
+            }
+
+            UpdateItem (slot);
+            return;
+        }
 
         newSlot.MoveItem (slot.item);
         UpdateItem (slot);
 	}
 
 	float CalcWepWeight () {
-		float val = 0f;
-		for (int i = 0; i < activeWeapons.Count; i++) {
-			val += activeWeapons[i].combinedStats.weight;
-		}
-		return val;
-	}
+        if (activeWeapon)
+            return activeWeapon.combinedStats.weight;
+        return 0;
+    }
 
-	void UpdateItem (CharacterEquipment.Equipment slot) {
+    void UpdateItem (CharacterEquipment.Equipment slot) {
 		slot.Update ();
 	}
 
@@ -133,13 +143,13 @@ public class Character : Unit {
         pointer.LookAt (targetPos);
 
         // TODO: Change activeWeapons to a single weapon or tool reference.
-        for (int i = 0; i < activeWeapons.Count; i++) {
-            Transform tran = activeWeapons[i].transform;
+        if (activeWeapon) {
+            Transform tran = activeWeapon.transform;
             tran.position = Vector3.Lerp (tran.position, toolSlot.transform.position, stats.recoilRecovery * Time.fixedDeltaTime);
             tran.rotation = Quaternion.Slerp (tran.rotation, toolSlot.transform.rotation, stats.recoilRecovery / 5f * Time.fixedDeltaTime);
         }
 
-		if (target) {
+        if (target) {
 
 			if (state == State.Attacking) {
 				if (ObjectVisibleFromHeadbone (target) && Vector3.Distance (target.position, transform.position) < CalcOptics ().y) {
@@ -244,11 +254,10 @@ public class Character : Unit {
 	}
 
 	void FireWeapons () {
-		for (int i = 0; i < activeWeapons.Count; i++)
-			// Lol this actually worked.
-			if (transform.rotation == Quaternion.RotateTowards (transform.rotation, Quaternion.Euler (0f, pointer.eulerAngles.y, 0f), 5)) {
-                activeWeapons[i].Fire (faction, target);
-            }
+		// Lol this actually worked.
+        if (activeWeapon)
+		    if (transform.rotation == Quaternion.RotateTowards (transform.rotation, Quaternion.Euler (0f, pointer.eulerAngles.y, 0f), 5))
+                activeWeapon.Fire (faction, target);
 	}
 
     public void WeaponRecoil (Transform weapon, float recoil) {
@@ -352,7 +361,7 @@ public class Character : Unit {
         UpdatePose ();
         Weapon wep = equipment.GetComponentInChildren<Weapon> ();
         if (wep)
-            activeWeapons.Add (wep);
+            activeWeapon = wep;
     }
 
     public void OnDeEquip () {
@@ -409,6 +418,11 @@ public class Character : Unit {
 		}
 	}
 
+    public void UpdateAmmunition () {
+        if (activeWeapon)
+            activeWeapon.UpdateAmmunition ();
+    }
+
     private void Die (Damage d) {
         RagdollHandler rag = GetComponent<RagdollHandler> ();
         rag.Ragdoll ();
@@ -433,6 +447,10 @@ public class Character : Unit {
             colliders[i].gameObject.tag = "DeadCharacter";
             colliders[i].gameObject.layer = layer;
         }
+    }
+
+    public Inventory.Slot FindAmmoByType (AmmoPrefab.AmmoType type) {
+        return inventory.FindItemByType (ItemPrefab.Type.Ammunition);
     }
 
     void OnDrawGizmos () {
@@ -477,7 +495,9 @@ public class CharacterEquipment {
 		public Inventory.Slot item;
 		public GameObject equippedItem;
 		public Transform transform;
+
         public bool dropOnDeath;
+        public bool spawnOnEquip;
 
         public InspectorSide side;
         public Texture defualtSlotImage;
@@ -491,7 +511,7 @@ public class CharacterEquipment {
                 Object.Destroy (equippedItem);
             }
 
-            if (item && item.item) {
+            if (spawnOnEquip && item && item.item) {
                 GameObject newTool = (GameObject)Object.Instantiate (item.item.prefab.gameObject, transform.position, transform.rotation);
 
                 newTool.transform.position = transform.position;

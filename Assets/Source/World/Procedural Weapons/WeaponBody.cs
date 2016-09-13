@@ -33,11 +33,12 @@ public class WeaponBody : WeaponPart {
 
 	[Header ("Misc")]
 	public Weapon weapon;
-	public GameObject bullet;
 	private bool isBuild;
 	public AnimType animationType;
+    public AmmoPrefab.AmmoType ammoType;
+    public ItemPrefab currentAmmoPrefab;
 
-	[Header ("Audio")]
+    [Header ("Audio")]
 	public AudioSource audioSource;
 	public AudioClip fireSound;
 
