@@ -93,7 +93,7 @@ public class Game : MonoBehaviour {
 
 	void OnGUI () {
 		for (int i = 0; i < messages.Count; i++) {
-			GUI.Label (new Rect (10f, Screen.height - 20f * i - 30, 200f, 20f), messages[i]);
+			GUI.Label (new Rect (10f, Screen.height - 20f * i - 30, Screen.width - 10f, 20f), messages[i]);
 		}
 	}
 

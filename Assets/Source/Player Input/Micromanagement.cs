@@ -24,4 +24,20 @@ public class Micromanagement : MonoBehaviour {
 		}
 		return positions;
 	}
+
+    public static void OrderInteraction (Transform interactionObject, string command) {
+        if (PlayerInput.selectedUnits.Count > 0) {
+            // Find available member, one without any commands.
+            Squadmember member = PlayerInput.selectedUnits[0];
+            for (int i = 0; i < PlayerInput.selectedUnits.Count; i++) {
+                if (PlayerInput.selectedUnits[i].commands.Count == 0) {
+                    member = PlayerInput.selectedUnits[i];
+                }
+            }
+
+            Command.InteractCommand (interactionObject, member, command);
+        } else {
+            Game.AddMessage ("A soldier must be selected to interact with something.");
+        }
+    }
 }

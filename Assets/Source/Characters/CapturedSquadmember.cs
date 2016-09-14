@@ -15,17 +15,7 @@ public class CapturedSquadmember : Character {
         if (Squad.activeSquad.members.Count == 0) {
             DialogGUI.RestartCoroutine (RunDialog ());
         } else {
-            if (PlayerInput.selectedUnits.Count > 0) {
-                // Find available member, one without any commands.
-                Squadmember member = PlayerInput.selectedUnits[0];
-                for (int i = 0; i < PlayerInput.selectedUnits.Count; i++) {
-                    if (PlayerInput.selectedUnits[i].commands.Count == 0) {
-                        member = PlayerInput.selectedUnits[i];
-                    }
-                }
-
-                Command.InteractCommand (transform, member, "Recruit");
-            }
+            Micromanagement.OrderInteraction (transform, "Recruit");
         }    
     }
 
@@ -48,6 +38,8 @@ public class CapturedSquadmember : Character {
     void ChangeToSquadmember () {
         GameObject newMember = (GameObject)Instantiate (squadmemberPrefab, transform.position, transform.rotation);
         Squadmember member = newMember.GetComponent<Squadmember> ();
+        member.unitName = unitName;
+
         Squad.activeSquad.AddMember (member);
         Destroy (gameObject);
     }

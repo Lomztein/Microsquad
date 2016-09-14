@@ -28,7 +28,6 @@ public class CharacterInspectorButton : MonoBehaviour {
 	}
 
     void UpdateButton () {
-        Debug.Log ("Updating button!", this);
         text.text = "";
 
         if (equipment.item.item) {

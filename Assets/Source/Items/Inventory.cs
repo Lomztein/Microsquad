@@ -31,32 +31,41 @@ public class Inventory : MonoBehaviour {
         return null;
     }
 
-    /*
-    /// <summary>
-    /// This function finds multiple slots of items, based on the count value. This should be used if there isn't enough count in a single item, for instance if looking for ammo.
-    /// Do note that this function removes the items found from the inventory.
-    /// </summary>
-    /// <param name="type"></param>
-    /// <param name="count"></param>
-    /// <returns></returns>
-    public Slot[] FindItemsByType (ItemPrefab.Type type, int count) {
+    public Slot FindAvailableSlot (Item movingItem = null) {
+        foreach (Slot s in slots) {
 
-        List<Item> items = new List<Item> ();
-        List<int> amount = new List<int> ();
+            // If the slot already has an item, compare to moving item and return if stackable.
+            if (s.item && movingItem && s.count != movingItem.prefab.maxStack) {
+                if (Item.Equals (s.item, movingItem)) {
+                    return s;
+                }
+            }else {
+                if (!s.item)
+                    return s;
+            }
+        }
 
-        List<Slot> foundSlots = new List<Slot> ();
+        return null;
+    }
 
-        while (count > 0) {
-            Slot slot = FindItemByType (type);
-            
-
+    // This will either work or go into infinite loopness.
+    public void PlaceItems (params Slot[] items) {
+        for (int i = 0; i < items.Length; i++) {
+            Slot loc = items[i];
+            while (loc.count != 0) {
+                Slot s = FindAvailableSlot (loc.item);
+                if (s) {
+                    loc.MoveItem (s);
+                    s.ForceButtonUpdate ();
+                } else
+                    break;
+            }
         }
     }
 
-    public Slot[] FindItemsByPrefab (ItemPrefab prefab, int count) {
-
+    public void MoveAllItems ( Inventory newInventory ) {
+        newInventory.PlaceItems (slots);
     }
-    */
 
     public class Slot : ScriptableObject {
 
@@ -108,7 +117,7 @@ public class Inventory : MonoBehaviour {
             if (transferCount == -1)
                 transferCount = count;
 
-            if (Equals (this, newSlot)) {
+            if (Item.Equals (item, otherItem)) {
 
                 // Both sides have items, are the same item and metadata.
                 int total = otherCount + transferCount;
@@ -151,10 +160,6 @@ public class Inventory : MonoBehaviour {
             }
 
             ForceButtonUpdate ();
-        }
-
-        public static bool Equals (Slot slotOne, Slot slotTwo) {
-            return (slotOne.item && slotTwo.item && slotOne.item.prefab == slotTwo.item.prefab && slotOne.item.metadata == slotTwo.item.metadata);
         }
     }
 }

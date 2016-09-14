@@ -95,10 +95,27 @@ public class Character : Unit {
 		if (fromSlot.item && slotType != fromSlot.item.prefab.slotType)
 			return;
 
+        // Handle removing incompatable ammo if new weapon type is placed.
+        if (fromSlot.item && slotType == CharacterEquipment.Slot.Hand) {
+            CharacterEquipment.Equipment ammoSlot = FindSlotByType (CharacterEquipment.Slot.Ammo);
+
+            if (ammoSlot.item.item) {
+                AmmoPrefab.AmmoType ammoType = ammoSlot.item.item.attributes.GetAttribute<AmmoPrefab.AmmoType> ("AmmoType");
+                SavedWeapon saved = SavedWeapon.LoadFromString (fromSlot.item.metadata);
+                AmmoPrefab.AmmoType weaponType = WeaponGenerator.cur.weaponClasses[saved.classID].bodies[saved.bodyID].GetComponent<WeaponBody> ().ammoType;
+
+                if (weaponType != ammoType) {
+                    inventory.PlaceItems (ammoSlot.item);
+                }
+
+                // Just to avoid memory being used up or something. Feels right to do this.
+                Destroy (saved);
+            }
+        }
+
         // Handle specifics when swapping ammunition.
         if (fromSlot.item && slotType == CharacterEquipment.Slot.Ammo) {
             AmmoPrefab.AmmoType ammoType = fromSlot.item.attributes.GetAttribute<AmmoPrefab.AmmoType> ("AmmoType");
-            Debug.Log (activeWeapon);
 
             if (activeWeapon) {
                 if (activeWeapon.body.ammoType == ammoType) {
@@ -457,7 +474,6 @@ public class Character : Unit {
             if (slot.item && slot.item.prefab.type == ItemPrefab.Type.Ammunition) {
 
                 AmmoPrefab.AmmoType t = slot.item.attributes.GetAttribute<AmmoPrefab.AmmoType> ("AmmoType");
-                Debug.Log (slot + ": " + type + ", " + t);
 
                 if (t == type)
                     return slot;

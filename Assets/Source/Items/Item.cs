@@ -49,4 +49,8 @@ public class Item : ScriptableObject {
 
         return cachedIcon;
     }
+
+    public static bool Equals ( Item slotOne, Item slotTwo ) {
+        return (slotOne && slotTwo && slotOne.prefab == slotTwo.prefab && slotOne.metadata == slotTwo.metadata);
+    }
 }
