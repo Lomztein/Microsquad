@@ -16,11 +16,11 @@ public class ItemPrefab : ScriptableObject {
     public string data;
     public int maxStack = 999;
 
-    public static explicit operator Item (ItemPrefab prefab) {
+    public virtual Item GetItem () {
         Item item = CreateInstance<Item> ();
-        item.name = prefab.name;
-        item.prefab = prefab;
-        item.metadata = prefab.data;
+        item.name = name;
+        item.prefab = this;
+        item.metadata = data;
         return item;
     }
 }

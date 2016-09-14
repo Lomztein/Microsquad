@@ -15,6 +15,7 @@ public class ObjectAttribute {
         if (AttributeExists (name))
             return (T)data[name];
 
+        Debug.Log ("Tried to get attribute " + name + ", that didn't exists.");
         return default (T);
     }
 

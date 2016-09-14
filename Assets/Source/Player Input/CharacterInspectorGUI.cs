@@ -53,7 +53,7 @@ public class CharacterInspectorGUI : MonoBehaviour {
 
         inventoryGUI.inventory = character.inventory;
 
-        ShowInventory ();
+        // ShowInventory ();
         CreateEquipmentButtons ();
     }
 

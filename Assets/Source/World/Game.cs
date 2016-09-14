@@ -60,6 +60,8 @@ public class Game : MonoBehaviour {
 		messageTimes.Add (messageTime);
 		if (messages.Count > maxMessages)
 			messages.RemoveAt (messages.Count - 1);
+
+        Debug.Log ("Message: " + message);
 	}
 
 	public void SavePreferences () {

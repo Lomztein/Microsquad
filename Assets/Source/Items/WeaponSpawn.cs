@@ -19,6 +19,7 @@ public class WeaponSpawn : EquippedItem {
             if (message.slot != null)
                 message.slot.equippedItem = gameObject;
 
+            message.character.activeWeapon = w;
             w.Reload ();
         }
 

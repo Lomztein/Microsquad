@@ -3,14 +3,13 @@ using System.Collections;
 
 public class AmmoPrefab : ItemPrefab {
 
-    public enum AmmoType { Pistol, Rifle, Sniper, Rocket, Energy, Magic }
+    public enum AmmoType { Pistol, Rifle, Shotgun, Sniper, Rocket, Energy, Magic }
 
     public AmmoType ammoType;
 
-    public static explicit operator Item ( AmmoPrefab prefab ) {
-        Item item = (Item)prefab;
-        item.attributes.AddAttribute ("AmmoType", prefab.ammoType);
+    public override Item GetItem () {
+        Item item = base.GetItem ();
+        item.attributes.AddAttribute ("AmmoType", ammoType);
         return item;
     }
-
 }

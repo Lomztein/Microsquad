@@ -91,27 +91,33 @@ public class Character : Unit {
         return Vector2.zero;
     }
 
-    public void ChangeEquipment (CharacterEquipment.Slot slotType, CharacterEquipment.Equipment slot, Inventory.Slot newSlot) {
-		if (newSlot.item && slotType != newSlot.item.prefab.slotType)
+    public void ChangeEquipment (CharacterEquipment.Slot slotType, CharacterEquipment.Equipment slot, Inventory.Slot fromSlot) {
+		if (fromSlot.item && slotType != fromSlot.item.prefab.slotType)
 			return;
 
         // Handle specifics when swapping ammunition.
-        if (slotType == CharacterEquipment.Slot.Ammo) {
-            AmmoPrefab.AmmoType ammoType = newSlot.item.attributes.GetAttribute<AmmoPrefab.AmmoType> ("AmmoType");
-            Debug.Log (ammoType);
+        if (fromSlot.item && slotType == CharacterEquipment.Slot.Ammo) {
+            AmmoPrefab.AmmoType ammoType = fromSlot.item.attributes.GetAttribute<AmmoPrefab.AmmoType> ("AmmoType");
+            Debug.Log (activeWeapon);
 
             if (activeWeapon) {
                 if (activeWeapon.body.ammoType == ammoType) {
-                    newSlot.MoveItem (slot.item, activeWeapon.body.magazine.maxAmmo, true);
+                    int space = Mathf.Min (activeWeapon.body.magazine.maxAmmo - slot.item.count, fromSlot.count);
+
+                    if (space > 0) {
+                        fromSlot.MoveItem (slot.item, space, false);
+                    }
                 }
                 UpdateAmmunition ();
             }
 
+            slot.item.ForceButtonUpdate ();
             UpdateItem (slot);
             return;
         }
 
-        newSlot.MoveItem (slot.item);
+        slot.item.ForceButtonUpdate ();
+        fromSlot.MoveItem (slot.item);
         UpdateItem (slot);
 	}
 
@@ -359,9 +365,6 @@ public class Character : Unit {
 
     public void OnEquip (CharacterEquipment.Equipment slot, GameObject equipment) {
         UpdatePose ();
-        Weapon wep = equipment.GetComponentInChildren<Weapon> ();
-        if (wep)
-            activeWeapon = wep;
     }
 
     public void OnDeEquip () {
@@ -450,7 +453,18 @@ public class Character : Unit {
     }
 
     public Inventory.Slot FindAmmoByType (AmmoPrefab.AmmoType type) {
-        return inventory.FindItemByType (ItemPrefab.Type.Ammunition);
+        foreach (Inventory.Slot slot in inventory.slots) {
+            if (slot.item && slot.item.prefab.type == ItemPrefab.Type.Ammunition) {
+
+                AmmoPrefab.AmmoType t = slot.item.attributes.GetAttribute<AmmoPrefab.AmmoType> ("AmmoType");
+                Debug.Log (slot + ": " + type + ", " + t);
+
+                if (t == type)
+                    return slot;
+            }
+        }
+
+        return null;
     }
 
     void OnDrawGizmos () {
@@ -529,7 +543,7 @@ public class CharacterEquipment {
             yield return new WaitForSeconds (waitTime);
 
             Rigidbody body = transform.GetComponentInParent<Rigidbody> ();
-            GameObject pItem = PhysicalItem.Create (item.item, 1, transform.position, transform.rotation).gameObject;
+            GameObject pItem = PhysicalItem.Create (item.item, item.count, transform.position, transform.rotation).gameObject;
             Rigidbody drop = pItem.GetComponent<Rigidbody> ();
 
             drop.velocity = body.velocity;

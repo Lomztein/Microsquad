@@ -233,7 +233,7 @@ public class PlayerInput : MonoBehaviour {
 	}
 
     public void PickUpItem (Vector3 position) {
-        Collider[] col = Physics.OverlapSphere (position, 0.25f);
+        Collider[] col = Physics.OverlapSphere (position, 0.25f, physicalItemMask);
 
         float dist = float.MaxValue;
         GameObject closest = null;
@@ -252,11 +252,13 @@ public class PlayerInput : MonoBehaviour {
             itemInHand.count = 0;
         }
 
-        PhysicalItem pItem = closest.GetComponent<PhysicalItem> ();
+        if (closest) {
+            PhysicalItem pItem = closest.GetComponent<PhysicalItem> ();
 
-        if (pItem) {
-            pItem.singleSlot.MoveItem (itemInHand);
-            Destroy (closest);
+            if (pItem) {
+                pItem.singleSlot.MoveItem (itemInHand);
+                Destroy (closest);
+            }
         }
 
         UpdateItemInHand ();

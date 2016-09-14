@@ -21,14 +21,18 @@ public class Weapon : MonoBehaviour {
     private Projectile currentProjectile;
 
 	private bool chambered = true;
+    private bool isReloading = false;
 
 	void Start () {
 		CombineData ();
 	}
 
 	public float CalcDPS () {
-		float damage = body.currentAmmoPrefab.gameObject.GetComponent<Projectile>().CalcDamage ();
-		return damage / combinedStats.firerate * muzzles.Length;
+		float damage = 0f;
+        if (body.currentAmmoPrefab)
+            body.currentAmmoPrefab.gameObject.GetComponent<Projectile> ().CalcDamage ();
+
+        return damage / combinedStats.firerate * muzzles.Length;
 	}
 
 	public Vector2 GetOpticSpeed () {
@@ -60,24 +64,31 @@ public class Weapon : MonoBehaviour {
 	}
 
 	public void Fire (Faction faction, Transform target) {
-        bool hasAmmo = characterAmmoSlot == null ? true : characterAmmoSlot.count != 0;
+        bool hasAmmo = characterAmmoSlot.count != 0;
+
 		if (chambered && hasAmmo) {
 			StartCoroutine (DoFire (faction, target));
-		}else if (!hasAmmo) {
+		}else if (!hasAmmo && !isReloading) {
+            Game.AddMessage (character.unitName + " is reloading!");
+
+            isReloading = true;
 			Invoke ("Reload", body.magazine.reloadTime);
-		}
+        }
 	}
 
     public void UpdateAmmunition () {
-        if (character) {
-            CharacterEquipment.Equipment equipment = character.FindSlotByType (CharacterEquipment.Slot.Ammo);
-            if (equipment != null)
-                characterAmmoSlot = equipment.item;
-        }
+        if (!character)
+            return;
 
-        if (characterAmmoSlot != null && characterAmmoSlot.item)
+        characterAmmoSlot = character.FindSlotByType (CharacterEquipment.Slot.Ammo).item;
+
+        if (characterAmmoSlot.item) {
             body.currentAmmoPrefab = characterAmmoSlot.item.prefab;
-        currentProjectile = body.currentAmmoPrefab.gameObject.GetComponent<Projectile> ();
+            currentProjectile = body.currentAmmoPrefab.gameObject.GetComponent<Projectile> ();
+        }else {
+            body.currentAmmoPrefab = null;
+            currentProjectile = null;
+        }
     }
 
     public void Reload () {
@@ -85,28 +96,29 @@ public class Weapon : MonoBehaviour {
         // If no ammo slot is found, it simply reloads all bullets, so that certain characters can have infinite ammo if needed.
         // How it will handle which projectile is used I haven't found out yet, perhaps use an AmmoPrefab object to define that.
         CharacterEquipment.Equipment slot = character.FindSlotByType (CharacterEquipment.Slot.Ammo);
-        if (slot == null) {
-            body.magazine.currentAmmo = body.magazine.maxAmmo;
-            return;
-        }
 
-        // Max tries should be removed once this function has been tested to not create infinite loops.
-        int maxTries = 1024;
-        while (body.magazine.currentAmmo != body.magazine.maxAmmo && maxTries > 0) {
+        int maxTries = 128;
+        while (characterAmmoSlot.count != body.magazine.maxAmmo) {
             Inventory.Slot ammoSlot = character.inventory.FindItemByPrefab (body.currentAmmoPrefab);
-            int needed = Mathf.Min (body.magazine.maxAmmo - ammoSlot.count, ammoSlot.count);
 
-            body.magazine.currentAmmo += needed;
+            if (ammoSlot == null && slot.item.item == null)
+                ammoSlot = character.FindAmmoByType (body.ammoType);
 
-            if (characterAmmoSlot) {
-                character.ChangeEquipment (CharacterEquipment.Slot.Ammo, slot, ammoSlot);
-            }
+            // Make sure the loop breaks if the inventory is empty of the item.
+            if (!ammoSlot)
+                break;
+
+            // int needed = Mathf.Min (body.magazine.maxAmmo - characterAmmoSlot.count, ammoSlot.count);
+            character.ChangeEquipment (CharacterEquipment.Slot.Ammo, slot, ammoSlot);
 
             maxTries--;
-
-            if (maxTries == 1024)
-                Debug.Log ("Max tries rached, faggot");
+            if (maxTries == 0) {
+                Debug.LogWarning ("Reached max tries when searching for ammo.");
+                break;
+            }
         }
+
+        isReloading = false;
     }
 
 	IEnumerator DoFire (Faction faction, Transform target) {
@@ -132,8 +144,8 @@ public class Weapon : MonoBehaviour {
 			}
             character.WeaponRecoil (transform.parent, recoil);
 
-            if (characterAmmoSlot)
-			    characterAmmoSlot.ChangeCount (-1);
+			characterAmmoSlot.ChangeCount (-1);
+            characterAmmoSlot.count = characterAmmoSlot.count;
 
             if (body.casingEjector)
                 body.casingEjector.Emit (1);

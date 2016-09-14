@@ -40,8 +40,9 @@ public class StartingEquipment : MonoBehaviour {
     private Inventory.Slot GetItem (Piece piece) {
 
         Inventory.Slot tempSlot = Inventory.Slot.CreateSlot ();
-        tempSlot.item = (Item)piece.item;
-        tempSlot.count = piece.count;
+        tempSlot.item = piece.item.GetItem ();
+        // Fuck I love these compact if statements.
+        tempSlot.count = piece.count == -1 ? piece.item.maxStack : piece.count;
         tempSlots.Add (tempSlot);
 
         if (piece.metadata.Length > 0)

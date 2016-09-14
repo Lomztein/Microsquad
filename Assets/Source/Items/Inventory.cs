@@ -90,6 +90,8 @@ public class Inventory : MonoBehaviour {
 
             if (count == 0)
                 RemoveItem ();
+
+            ForceButtonUpdate ();
         }
 
         public void RemoveItem () {
@@ -106,9 +108,7 @@ public class Inventory : MonoBehaviour {
             if (transferCount == -1)
                 transferCount = count;
 
-            if (item && otherItem
-                && item.prefab == otherItem.prefab
-                && item.metadata == otherItem.metadata) {
+            if (Equals (this, newSlot)) {
 
                 // Both sides have items, are the same item and metadata.
                 int total = otherCount + transferCount;
@@ -116,8 +116,7 @@ public class Inventory : MonoBehaviour {
 
                 if (total <= max) {
                     newSlot.ChangeCount (transferCount);
-                    RemoveItem ();
-
+                    ChangeCount (-transferCount);
                 } else {
                     // Other slot does not have enough room for this slots item,
                     // so it adds what it can and subtracts those from this slot.
@@ -134,14 +133,28 @@ public class Inventory : MonoBehaviour {
                 // this slots item and removes item from this slot.
             } else {
                 // Both sides are not the same item, or any side doesn't have an item. Simply swap spaces.
-                newSlot.item = item;
-                newSlot.count = count;
+                // If recieving side is empty, only the transferCount should be moved, if not, and transferCount
+                // isn't the entire stack, do nothing.
 
-                item = otherItem;
-                count = otherCount;
+                if (newSlot.item == null) {
+                    newSlot.count = transferCount;
+                    newSlot.item = item;
+
+                    ChangeCount (-transferCount);
+                }else if (transferCount == count) {
+                    newSlot.count = count;
+                    newSlot.item = item;
+
+                    item = otherItem;
+                    count = otherCount;
+                }
             }
 
             ForceButtonUpdate ();
+        }
+
+        public static bool Equals (Slot slotOne, Slot slotTwo) {
+            return (slotOne.item && slotTwo.item && slotOne.item.prefab == slotTwo.item.prefab && slotOne.item.metadata == slotTwo.item.metadata);
         }
     }
 }

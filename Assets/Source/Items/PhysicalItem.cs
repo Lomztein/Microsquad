@@ -14,7 +14,7 @@ public class PhysicalItem : MonoBehaviour {
     void Start () {
         if (prefab) {
             singleSlot = Inventory.Slot.CreateSlot ();
-            singleSlot.item = (Item)prefab;
+            singleSlot.item = prefab.GetItem ();
             singleSlot.count = count;
             UpdateMesh ();
         }
