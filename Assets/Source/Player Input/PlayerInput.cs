@@ -151,11 +151,12 @@ public class PlayerInput : MonoBehaviour {
 			}
 			
 			if (Input.GetMouseButtonDown (1)) {
-				OrderUnits (hit, unit);
 
                 ContextMenuElement element = hit.collider.GetComponentInParent<ContextMenuElement> ();
                 if (element) {
                     ContextMenu.Open (element.elements, element);
+                }else {
+                    OrderUnits (hit, unit);
                 }
             }
 		}
@@ -190,8 +191,8 @@ public class PlayerInput : MonoBehaviour {
 
     private Vector3 GetCommandStartPos (Squadmember member) {
         Vector3 startPos = member.transform.position;
-        if (member.commands.Count > 0 && Input.GetButton ("Shift"))
-            startPos = member.commands[member.commands.Count - 1].position + Vector3.up;
+        if (member.ai.commands.Count > 0 && Input.GetButton ("Shift"))
+            startPos = member.ai.commands[member.ai.commands.Count - 1].position + Vector3.up;
 
         return startPos;
     }
@@ -210,9 +211,9 @@ public class PlayerInput : MonoBehaviour {
 					Vector3 pos = hit.point + positions[i] + Vector3.up;
 					Debug.DrawLine (startPos, pos);
 					if (!Input.GetButton ("Shift"))
-					    member.ClearCommands ();
+					    member.ai.ClearCommands ();
 							
-					Command.MoveCommand (startPos, pos, member);
+					Command.MoveCommand (startPos, pos, member.ai);
 				}
 			}
 		}
@@ -224,9 +225,9 @@ public class PlayerInput : MonoBehaviour {
 
                 if (unit.faction != Faction.Player) {
 					if (!Input.GetButton ("Shift"))
-						member.ClearCommands ();
+						member.ai.ClearCommands ();
 
-					Command.KillCommand (unit.transform, member, unit.health);
+					Command.KillCommand (unit.transform, member.ai, unit.health);
 				}
 			}
 		}

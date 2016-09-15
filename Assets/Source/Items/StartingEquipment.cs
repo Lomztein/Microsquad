@@ -17,18 +17,18 @@ public class StartingEquipment : MonoBehaviour {
 	}
 
     public void ApplyInventory () {
-        Character character = GetComponent<Character> ();
-        if (character) {
-            foreach (Piece p in equipmentPieces) {
-                character.ChangeEquipment (p.item.slotType, character.FindSlotByName (p.slotName), GetItem (p));
-            }
-        }
-
         Inventory inventory = GetComponent<Inventory> ();
         if (inventory) {
             for (int i = 0; i < inventoryPieces.Length; i++) {
                 inventory.slots[i].item = GetItem (inventoryPieces[i]).item;
                 inventory.slots[i].count = GetItem (inventoryPieces[i]).count;
+            }
+        }
+
+        Character character = GetComponent<Character> ();
+        if (character) {
+            foreach (Piece p in equipmentPieces) {
+                character.ChangeEquipment (p.item.slotType, character.FindSlotByName (p.slotName), GetItem (p));
             }
         }
 

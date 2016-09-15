@@ -46,8 +46,7 @@ public class AICommander : MonoBehaviour {
 		Vector3[] positions = Micromanagement.GetSpriralPositions (1f, currentUnits.Count);
 		for (int i = 0; i < currentUnits.Count; i++) {
 			if (i < amount * threatCompensation) {
-				currentUnits[i].targetPos = positions[i];
-				currentUnits[i].state = Character.State.Moving;
+				
 				currentUnits.RemoveAt (i);
 			}
 		}

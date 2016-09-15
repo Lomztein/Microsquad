@@ -30,12 +30,12 @@ public class Micromanagement : MonoBehaviour {
             // Find available member, one without any commands.
             Squadmember member = PlayerInput.selectedUnits[0];
             for (int i = 0; i < PlayerInput.selectedUnits.Count; i++) {
-                if (PlayerInput.selectedUnits[i].commands.Count == 0) {
+                if (PlayerInput.selectedUnits[i].ai.commands.Count == 0) {
                     member = PlayerInput.selectedUnits[i];
                 }
             }
 
-            Command.InteractCommand (interactionObject, member, command);
+            Command.InteractCommand (interactionObject, member.ai, command);
         } else {
             Game.AddMessage ("A soldier must be selected to interact with something.");
         }

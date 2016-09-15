@@ -63,11 +63,11 @@ public class Weapon : MonoBehaviour {
 		combinedStats = stats;
 	}
 
-	public void Fire (Faction faction, Transform target) {
+	public void Fire (Faction faction, Transform target, float damageMultiplier = 1f) {
         bool hasAmmo = characterAmmoSlot.count != 0;
 
 		if (chambered && hasAmmo) {
-			StartCoroutine (DoFire (faction, target));
+			StartCoroutine (DoFire (faction, target, damageMultiplier));
 		}else if (!hasAmmo && !isReloading) {
             Game.AddMessage (character.unitName + " is reloading!");
 
@@ -121,7 +121,7 @@ public class Weapon : MonoBehaviour {
         isReloading = false;
     }
 
-	IEnumerator DoFire (Faction faction, Transform target) {
+	IEnumerator DoFire (Faction faction, Transform target, float damageMul = 1f) {
 
 		chambered = false;
 
@@ -135,6 +135,7 @@ public class Weapon : MonoBehaviour {
 				GameObject bul = (GameObject)Instantiate (body.currentAmmoPrefab.gameObject, muzzles[i].position, muzzles[i].rotation);
 				Projectile pro = bul.GetComponent<Projectile>();
 				FeedBulletData (pro, muzzles[i], faction);
+                pro.weight *= damageMul;
 				barrels[i].Flash ();
                 recoil += combinedStats.recoil;
 
@@ -145,7 +146,6 @@ public class Weapon : MonoBehaviour {
             character.WeaponRecoil (transform.parent, recoil);
 
 			characterAmmoSlot.ChangeCount (-1);
-            characterAmmoSlot.count = characterAmmoSlot.count;
 
             if (body.casingEjector)
                 body.casingEjector.Emit (1);

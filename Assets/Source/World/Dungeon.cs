@@ -167,7 +167,7 @@ public class Dungeon : MonoBehaviour {
     }
 
 	void OnDrawGizmos () {
-		Gizmos.DrawCube (currentBounds.center + Vector3.up * currentBounds.size.y / 2f, currentBounds.size);
+		//Gizmos.DrawCube (currentBounds.center + Vector3.up * currentBounds.size.y / 2f, currentBounds.size);
 		Gizmos.DrawWireCube (checkingBounds.center + Vector3.up * checkingBounds.size.y / 2f, checkingBounds.size);
 	}
 }
