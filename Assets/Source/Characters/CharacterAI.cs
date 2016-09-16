@@ -142,7 +142,6 @@ public class CharacterAI : MonoBehaviour {
     }
 
     void FireWeapons (float damageMul = 1f) {
-        // Lol this actually worked.
         if (character.activeWeapon)
             if (transform.rotation == Quaternion.RotateTowards (transform.rotation, Quaternion.Euler (0f, pointer.eulerAngles.y, 0f), 5))
                 character.activeWeapon.Fire (character.faction, currentCommand.target, damageMul);
@@ -272,24 +271,18 @@ public class CharacterAI : MonoBehaviour {
         // Search for the character object in the target, and find his chest.
         Character targetChar = currentCommand.target.GetComponent<Character> ();
         Transform target = targetChar.FindSlotByType (CharacterEquipment.Slot.Chest).transform;
-        Vector3 targetPos = target.position;
 
         FindPathToCommand ();
-        while (currentCommand.target) {
+        while (targetChar) {
             if (CanSeeTarget (target)) {
-                targetPos = target.position;
+                RotateTowardsPosition (targetChar.transform.position);
                 pathIndex = 1;
                 FireWeapons ();
-                RotateTowardsPosition (target.position);
             } else {
-                targetPos = NextPathPosition ();
                 MoveTowardsCommand ();
             }
 
             CheckAndResetPath (target);
-
-            if (currentCommand.target.tag == "DeadCharacter")
-                break;
 
             yield return new WaitForFixedUpdate ();
         }
@@ -321,7 +314,7 @@ public class CharacterAI : MonoBehaviour {
 
         FindPathToCommand ();
 
-        while (currentCommand.target) {
+        while (targetChar) {
             if (CanSeeTarget (target)) {
                 targetPos = target.position;
                 pathIndex = 1;
@@ -329,12 +322,12 @@ public class CharacterAI : MonoBehaviour {
                 bool doFire = true;
                 for (int i = 0; i < 50 * 2; i++) {
 
-                    if (target.tag == "DeadCharacter") {
+                    if (!targetChar) {
                         doFire = false;
                         break;
                     }
 
-                    RotateTowardsPosition (target.position);
+                    RotateTowardsPosition (targetChar.transform.position);
                     yield return new WaitForFixedUpdate ();
                 }
 
@@ -346,9 +339,6 @@ public class CharacterAI : MonoBehaviour {
             }
 
             CheckAndResetPath (target);
-
-            if (currentCommand.target.tag == "DeadCharacter")
-                break;
 
             yield return new WaitForFixedUpdate ();
         }
