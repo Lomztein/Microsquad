@@ -72,9 +72,13 @@ public class Weapon : MonoBehaviour {
             Game.AddMessage (character.unitName + " is reloading!");
 
             isReloading = true;
-			Invoke ("Reload", body.magazine.reloadTime);
+            InvokeReload ();
         }
 	}
+
+    public void InvokeReload () {
+        Invoke ("Reload", body.magazine.reloadTime);
+    }
 
     public void UpdateAmmunition () {
         if (!character)
@@ -119,6 +123,7 @@ public class Weapon : MonoBehaviour {
         }
 
         isReloading = false;
+        chambered = true;
     }
 
 	IEnumerator DoFire (Faction faction, Transform target, float damageMul = 1f) {

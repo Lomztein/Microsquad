@@ -17,6 +17,7 @@ public class Squad : MonoBehaviour {
 		members.Add (member);
 		member.squad = this;
         Game.AddMessage (member.unitName + " has joined the squad.");
+        SquadStatusGUI.cur.UpdateSquad ();
     }
 
     public void RemoveMember (Squadmember member) {
@@ -28,6 +29,7 @@ public class Squad : MonoBehaviour {
         }
 
         Game.AddMessage (member.unitName + " has left the squad.");
-	}
+        SquadStatusGUI.cur.UpdateSquad ();
+    }
 
 }

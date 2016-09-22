@@ -35,6 +35,9 @@ public class Micromanagement : MonoBehaviour {
                 }
             }
 
+            if (!Input.GetButton ("Shift"))
+                member.ai.ClearCommands ();
+
             Command.InteractCommand (interactionObject, member.ai, command);
         } else {
             Game.AddMessage ("A soldier must be selected to interact with something.");

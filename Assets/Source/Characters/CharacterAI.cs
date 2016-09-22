@@ -145,6 +145,8 @@ public class CharacterAI : MonoBehaviour {
         if (character.activeWeapon)
             if (transform.rotation == Quaternion.RotateTowards (transform.rotation, Quaternion.Euler (0f, pointer.eulerAngles.y, 0f), 5))
                 character.activeWeapon.Fire (character.faction, currentCommand.target, damageMul);
+
+        SendMessage ("OnFireWeapons", SendMessageOptions.DontRequireReceiver);
     }
 
     public void CompleteCommand () {
@@ -260,7 +262,6 @@ public class CharacterAI : MonoBehaviour {
     IEnumerator DoMoveCommand () {
         FindPathToCommand ();
 
-        Vector3 targetPos = transform.position;
         while (!MoveTowardsCommand ())
             yield return new WaitForFixedUpdate ();
 
@@ -310,13 +311,11 @@ public class CharacterAI : MonoBehaviour {
         // Search for the character object in the target, and find his head.
         Character targetChar = currentCommand.target.GetComponent<Character> ();
         Transform target = targetChar.FindSlotByType (CharacterEquipment.Slot.Head).transform;
-        Vector3 targetPos = target.position;
 
         FindPathToCommand ();
 
         while (targetChar) {
             if (CanSeeTarget (target)) {
-                targetPos = target.position;
                 pathIndex = 1;
 
                 bool doFire = true;
@@ -334,7 +333,6 @@ public class CharacterAI : MonoBehaviour {
                 if (doFire)
                     FireWeapons (10f);
             } else {
-                targetPos = NextPathPosition ();
                 MoveTowardsCommand ();
             }
 

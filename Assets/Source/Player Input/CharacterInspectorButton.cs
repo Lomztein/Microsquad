@@ -12,6 +12,7 @@ public class CharacterInspectorButton : MonoBehaviour {
     public Text text;
 
     public CharacterEquipment.Equipment equipment;
+    public HoverContextElement element;
 
 	// Use this for initialization
 	void Start () {
@@ -35,8 +36,10 @@ public class CharacterInspectorButton : MonoBehaviour {
             if (equipment.item.count > 1) {
                 text.text = equipment.item.count.ToString ();
             }
+            element.text = equipment.slot.ToString () + " - " + equipment.item.ToString ();
         } else {
             image.texture = defaultIcon;
+            element.text = equipment.slot.ToString ();
         }
         PlayerInput.UpdateItemInHand ();
     }

@@ -8,6 +8,7 @@ public class Squadmember : Character {
 	public bool isSelected;
 	public Squad squad;
 	public GameObject selectedIndicator;
+    public SquadmemberStatusGUI statusGUI;
 
     new void Awake () {
         base.Awake ();
@@ -18,7 +19,11 @@ public class Squadmember : Character {
         }
     }
 
-	public void ChangeSelection (bool select) {
+    void Start () {
+        statusGUI.UpdateAll ();
+    }
+
+    public void ChangeSelection (bool select) {
         if (!squad)
             return;
         
@@ -42,10 +47,23 @@ public class Squadmember : Character {
 		if (Input.GetMouseButton (0)) {
 			if (PlayerInput.IsInsideSelector (new Vector3 (transform.position.x, 0f ,transform.position.z)))
 				ChangeSelection (true);
-			else if (!Input.GetButton ("Shift"))
+			else if (!Input.GetButton ("Shift") && !HoverContextElement.activeElement)
 				ChangeSelection (false);
 		}
 	}
+
+    void OnFireWeapons () {
+        statusGUI.UpdateAmmo ();
+    }
+
+    void OnEquipmentChanged () {
+        statusGUI.UpdateAll ();
+    }
+
+    new void OnTakeDamage (Damage d) {
+        base.OnTakeDamage (d);
+        statusGUI.UpdateStatus ();
+    }
 
     void OnDeath () {
         ChangeSelection (false);

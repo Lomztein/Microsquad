@@ -8,6 +8,8 @@ public class Unit : MonoBehaviour {
 	[Header ("Unit Basics")]
 	public Faction faction;
 	public string unitName;
+
+    public int maxHealth;
 	public int health;
 
 	public void SetFaction (Faction f) {

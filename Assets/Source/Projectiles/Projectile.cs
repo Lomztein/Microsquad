@@ -4,13 +4,15 @@ using System.Collections;
 public class Projectile : MonoBehaviour {
 
     public int bulletAmount = 1;
-	public float speed;
-	public Vector3 velocity;
-	public float weight;
-	public Faction faction;
-	public float range;
-	public LayerMask layer;
+    public float speed;
+    public Vector3 velocity;
+    public float weight;
+    public Faction faction;
+    public float range;
+    public LayerMask layer;
     public Character character;
+
+    public float armorPiercing;
 
     public Mesh spentCasing;
     public Material spentCasingMaterial;
@@ -31,11 +33,11 @@ public class Projectile : MonoBehaviour {
 			Character oc = hit.collider.GetComponent<Character>();
 			if (oc) {
 				if (oc.faction != Faction.Scavengers) {
-					oc.SendMessage ("OnTakeDamage", new Damage (CalcDamage (), force, character, hit.point), SendMessageOptions.DontRequireReceiver);
+					oc.SendMessage ("OnTakeDamage", new Damage (CalcDamage (), force, character, hit.point, armorPiercing), SendMessageOptions.DontRequireReceiver);
 					Destroy (gameObject);
 				}
 			}else{
-				hit.collider.SendMessage ("OnTakeDamage", new Damage (CalcDamage (), force, character, hit.point), SendMessageOptions.DontRequireReceiver);
+				hit.collider.SendMessage ("OnTakeDamage", new Damage (CalcDamage (), force, character, hit.point, armorPiercing), SendMessageOptions.DontRequireReceiver);
 				Destroy (gameObject);
 			}
 		}
@@ -53,11 +55,13 @@ public struct Damage {
 	public Vector3 force;
 	public Character character;
 	public Vector3 point;
+    public float armorPiercing;
 
-	public Damage (int _d, Vector3 _force, Character _char, Vector3 _point) {
+	public Damage (int _d, Vector3 _force, Character _char, Vector3 _point, float _armorPiercing) {
 		damage = _d;
 		force = _force;
 		character = _char;
 		point = _point;
+        armorPiercing = _armorPiercing;
 	}
 }

@@ -71,7 +71,7 @@ public class LootChest : MonoBehaviour {
     private Inventory.Slot GetItem ( Loot piece ) {
         Inventory.Slot tempSlot = Inventory.Slot.CreateSlot ();
         tempSlot.item = piece.prefab.GetItem ();
-        tempSlot.count = piece.count == -1 ? piece.prefab.maxStack : piece.count;
+        tempSlot.count = piece.maxCount == -1 ? piece.prefab.maxStack : Random.Range (piece.minCount, piece.maxCount + 1);
         tempSlots.Add (tempSlot);
 
         if (piece.metadata.Length > 0)
@@ -83,7 +83,8 @@ public class LootChest : MonoBehaviour {
     public class Loot {
 
         public ItemPrefab prefab;
-        public int count;
+        public int minCount;
+        public int maxCount;
         public string metadata;
 
         public int spawnChance;

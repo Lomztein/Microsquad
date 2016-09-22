@@ -7,11 +7,14 @@ public class InventoryButton : Button {
     public Inventory.Slot slot;
     public RawImage itemImage;
     public Text countText;
+    private HoverContextElement element;
 
     public void Init (Inventory.Slot buttonSlot) {
         itemImage = GetComponentInChildren<RawImage> ();
         countText = GetComponentInChildren<Text> ();
         slot = buttonSlot;
+
+        element = GetComponent<HoverContextElement> ();
     }
 
     public void UpdateButton () {
@@ -27,9 +30,14 @@ public class InventoryButton : Button {
                 countText.text = slot.count.ToString ();
             else
                 countText.text = "";
+
+            element.text = slot.ToString ();
         }else {
             itemImage.gameObject.SetActive (false);
             countText.text = "";
+            element.text = "";
         }
+
+        element.ForceUpdate ();
     }
 }

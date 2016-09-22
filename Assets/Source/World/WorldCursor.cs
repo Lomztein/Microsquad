@@ -3,7 +3,7 @@ using System.Collections;
 
 public class WorldCursor : MonoBehaviour {
 
-	public enum CursorType { Disable, Select, Move, Attack, AttackMove };
+	public enum CursorType { Disable, Select, Move, Attack, AttackMove, Defend };
 
 	public Material[] materials;
 	public GameObject[] cursors;
@@ -59,5 +59,11 @@ public class WorldCursor : MonoBehaviour {
 			cursorRenderer[0].sharedMaterial = cur.materials[1];
 			cursorRenderer[1].sharedMaterial = cur.materials[0];
 		}
-	}
+
+        if (type == CursorType.Defend) {
+            cur.cursors[0].SetActive (true);
+            cur.cursors[1].SetActive (false);
+            cursorRenderer[0].sharedMaterial = cur.materials[2];
+        }
+    }
 }

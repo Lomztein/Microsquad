@@ -85,7 +85,7 @@ public class Inventory : MonoBehaviour {
 
         public override string ToString () {
             if (item) {
-                return item.prefab.name + ", " + count.ToString ();
+                return item.prefab.itemName + ", " + count.ToString ();
             }else {
                 return "Empty";
             }
@@ -159,6 +159,7 @@ public class Inventory : MonoBehaviour {
                 }
             }
 
+            newSlot.ForceButtonUpdate ();
             ForceButtonUpdate ();
         }
     }

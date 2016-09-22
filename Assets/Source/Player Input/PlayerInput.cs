@@ -1,28 +1,38 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 public class PlayerInput : MonoBehaviour {
 
-	public static Vector3 worldMousePos;
-	public static Vector3 screenMousePos;
-	public static PlayerInput cur;
+    public static Vector3 worldMousePos;
+    public static Vector3 screenMousePos;
+    public static PlayerInput cur;
 
-	[Header ("Camera Controls")]
-	private Camera camera;
-	public float sensitivity = 5f;
-	public float zoom;
-	public Vector2 cameraHeight;
-	public Vector2 cameraAngle;
+    [Header ("Camera Controls")]
+    private Camera camera;
+    public float sensitivity = 5f;
+    public float zoom;
+    public Vector2 cameraHeight;
+    public Vector2 cameraAngle;
 
-	[Header ("Unit Control")]
-	public static List<Squadmember> selectedUnits = new List<Squadmember>();
+    [Header ("Unit Control")]
+    public static List<Squadmember> selectedUnits = new List<Squadmember>();
+    private bool advancedCommandOverride = false;
 
-	private float timeSinceLastClick;
-	public float doubleClickTime;
+    private float timeSinceLastClick;
+    public float doubleClickTime;
 
-	private Vector3 mouseDragStart;
-	public Bounds selector;
+    private Vector3 mouseDragStart;
+    public Bounds selector;
+
+    public enum AdvancedCommand { None, Execute, Scavange, Reload };
+    public AdvancedCommand currentAdvCommand;
+    private Coroutine advCommandCoroutine;
+    public Image[] commandHighlighers;
+
+    public GameObject commandPositionPrefab;
+    public List<GameObject> currentPositionObjects;
 
 	[Header ("Tactical Slowdown")]
 	public static bool isTacticallySlowed;
@@ -34,6 +44,8 @@ public class PlayerInput : MonoBehaviour {
     public static Inventory.Slot itemInHand;
     public GameObject representativeObject;
     public LayerMask physicalItemMask;
+    public RawImage itemIconImage;
+    public GameObject itemIconImageParent;
 
     // Use this for initialization
     void Awake () {
@@ -41,6 +53,7 @@ public class PlayerInput : MonoBehaviour {
 		cur = this;
 		defaultFixedDeltaTime = Time.fixedDeltaTime;
         itemInHand = Inventory.Slot.CreateSlot ();
+        SetAdvancedCommand (0);
 	}
 
 	void DeselectAllUnits () {
@@ -73,6 +86,77 @@ public class PlayerInput : MonoBehaviour {
 		Time.fixedDeltaTime = defaultFixedDeltaTime * Time.timeScale;
 		isTacticallySlowed = enable;
 	}
+
+    IEnumerator ScavangeAdvancedCommand (float range) {
+        advancedCommandOverride = true;
+        while (true) {
+
+            WorldCursor.SetCursor (WorldCursor.CursorType.Defend);
+            if (Input.GetMouseButtonDown (1)) {
+                Collider[] cols = Physics.OverlapSphere (worldMousePos, range, physicalItemMask);
+                List<PhysicalItem> items = new List<PhysicalItem> ();
+                for (int i = 0; i < cols.Length; i++) {
+                    items.Add (cols[i].GetComponent<PhysicalItem> ());
+                }
+
+                int memberIndex = 0;
+                while (items.Count != 0) {
+                    Command.InteractCommand (items[0].transform, selectedUnits[memberIndex].ai, "PlaceInSquadInventory", 1f);
+                    items.RemoveAt (0);
+
+                    memberIndex++;
+                    memberIndex = memberIndex % selectedUnits.Count;
+                }
+
+                break;
+            }
+
+            yield return null;
+        }
+        advancedCommandOverride = false;
+    }
+
+    void ManualReloadCommand () {
+        foreach (Squadmember member in selectedUnits) {
+            if (member.activeWeapon)
+                member.activeWeapon.InvokeReload ();
+        }
+        SetAdvancedCommand (0);
+    }
+
+    public void SetAdvancedCommand (int c) {
+        // Reset overrides.
+        WorldCursor.SetCursor (WorldCursor.CursorType.Move);
+        advancedCommandOverride = false;
+
+        if (advCommandCoroutine != null)
+            StopCoroutine (advCommandCoroutine);
+
+        // Set command to none if clicked already active commmand.
+        if ((int)currentAdvCommand == c)
+            currentAdvCommand = AdvancedCommand.None;
+        else
+            currentAdvCommand = (AdvancedCommand)c;
+
+        // Switch for function based advanced commands.
+        switch (currentAdvCommand) {
+            case AdvancedCommand.Scavange:
+                advCommandCoroutine = StartCoroutine (ScavangeAdvancedCommand (10f));
+                break;
+
+            case AdvancedCommand.Reload:
+                ManualReloadCommand ();
+                break;
+
+            default:
+                break;
+        }
+
+        // Update GUI elements.
+        for (int i = 0; i < commandHighlighers.Length; i++) {
+            commandHighlighers[i].gameObject.SetActive (i == (int)currentAdvCommand - 1);
+        }
+    }
 	
 	// Update is called once per frame
 	void Update () {
@@ -81,6 +165,7 @@ public class PlayerInput : MonoBehaviour {
 			StartCoroutine (ToggleTacticalPause (!isTacticallySlowed));
 		}
 
+        HoverContext.StaticUpdate ();
 		screenMousePos = Input.mousePosition;
 		timeSinceLastClick += Time.unscaledDeltaTime;
 
@@ -107,13 +192,15 @@ public class PlayerInput : MonoBehaviour {
 			WorldCursor.cur.transform.position = worldMousePos;
             representativeObject.transform.position = worldMousePos + Vector3.up + Vector3.up * GetInHandHeight ();
             representativeObject.transform.rotation = Quaternion.Euler (new Vector3 (0f, representativeObject.transform.eulerAngles.y + 60f * Time.deltaTime, 0f));
+            itemIconImageParent.transform.position = screenMousePos + Vector3.right * 64;
 
 			if (Input.GetMouseButtonDown (0)) {
 				if (!Input.GetButton ("Shift"))
 					DeselectAllUnits ();
 
 				mouseDragStart = worldMousePos;
-                PickUpItem (worldMousePos);
+                if (!HoverContextElement.activeElement)
+                    PickUpItem (worldMousePos);
             }
 
 			if (Input.GetMouseButton (0)) {
@@ -124,44 +211,50 @@ public class PlayerInput : MonoBehaviour {
 				selector.size = new Vector3 (selector.size.x, 2f, selector.size.z);
 			}
 
-            Unit unit = hit.collider.GetComponent<Unit>();
-			if (unit) {
-				WorldCursor.cur.transform.position = hit.collider.transform.position;
-				if (unit.faction == Faction.Player) {
-					WorldCursor.SetCursor (WorldCursor.CursorType.Select);
-				}else if (unit.faction != Faction.Player) {
-					WorldCursor.SetCursor (WorldCursor.CursorType.Attack);
-					WorldCursor.ForceMaterial (1, Game.FactionMaterial (unit.faction));
-				}
+            if (!advancedCommandOverride) {
+                Unit unit = hit.collider.GetComponent<Unit>();
+			    if (unit) {
+				    WorldCursor.cur.transform.position = hit.collider.transform.position;
+				    if (unit.faction == Faction.Player) {
+					    WorldCursor.SetCursor (WorldCursor.CursorType.Select);
+				    }else if (unit.faction != Faction.Player) {
+					    WorldCursor.SetCursor (WorldCursor.CursorType.Attack);
+					    WorldCursor.ForceMaterial (1, Game.FactionMaterial (unit.faction));
+				    }
 				
-				if (Input.GetMouseButtonUp (0)) {
+				    if (Input.GetMouseButtonUp (0)) {
 
-					unit.SendMessage ("ChangeSelection", true, SendMessageOptions.DontRequireReceiver);
-					if (timeSinceLastClick < doubleClickTime) {
-						for (int i = 0; i < Squad.activeSquad.members.Count; i++) {
-							Squad.activeSquad.members[i].ChangeSelection (true);
-						}
-					}
+					    unit.SendMessage ("ChangeSelection", true, SendMessageOptions.DontRequireReceiver);
+					    if (timeSinceLastClick < doubleClickTime) {
+						    for (int i = 0; i < Squad.activeSquad.members.Count; i++) {
+							    Squad.activeSquad.members[i].ChangeSelection (true);
+						    }
+					    }
 
-					timeSinceLastClick = 0f;
-				}
-			}else{
-				WorldCursor.SetCursor (WorldCursor.CursorType.Move);
-				WorldCursor.cur.transform.position = hit.point;
-			}
-			
-			if (Input.GetMouseButtonDown (1)) {
+					    timeSinceLastClick = 0f;
+				    }
+                    UpdateMoveOrderCursors (null, false);
+			    }else {
+                    WorldCursor.SetCursor (WorldCursor.CursorType.Move);
+				    WorldCursor.cur.transform.position = hit.point;
 
-                ContextMenuElement element = hit.collider.GetComponentInParent<ContextMenuElement> ();
-                if (element) {
-                    ContextMenu.Open (element.elements, element);
-                }else {
-                    OrderUnits (hit, unit);
+                    Vector3[] positions = Micromanagement.GetSpriralPositions (1.5f, selectedUnits.Count);
+                    UpdateMoveOrderCursors (positions, true);
+                }
+
+                if (Input.GetMouseButtonDown (1)) {
+
+                    ContextMenuElement element = hit.collider.GetComponentInParent<ContextMenuElement> ();
+                    if (element) {
+                        ContextMenu.Open (element.elements, element);
+                    }else {
+                        OrderUnits (hit, unit);
+                    }
                 }
             }
-		}
+        }
 
-		Vector3 movement = Vector3.zero;
+        Vector3 movement = Vector3.zero;
 		if (screenMousePos.x < 5f) {
 			movement += Vector3.left;
 		} else if (screenMousePos.x > Screen.width - 15f) {
@@ -197,6 +290,29 @@ public class PlayerInput : MonoBehaviour {
         return startPos;
     }
 
+    void UpdateMoveOrderCursors (Vector3[] positions, bool enable) {
+        if (enable) {
+            for (int i = 0; i < currentPositionObjects.Count; i++) {
+                if (i < positions.Length) {
+                    currentPositionObjects[i].transform.position = positions[i] + worldMousePos;
+                } else {
+                    Destroy (currentPositionObjects[i]);
+                    currentPositionObjects.RemoveAt (i);
+                }
+            }
+
+            for (int i = currentPositionObjects.Count; i < positions.Length; i++) {
+                GameObject newObject = (GameObject)Instantiate (commandPositionPrefab, positions[i] + worldMousePos, Quaternion.identity);
+                currentPositionObjects.Add (newObject);
+            }
+        } else {
+            for (int i = 0; i < currentPositionObjects.Count; i++) {
+                Destroy (currentPositionObjects[i]);
+            }
+            currentPositionObjects.Clear ();
+        }
+    }
+
 	void OrderUnits (RaycastHit hit, Unit unit) {
         // Figure out whatever was clicked.
 
@@ -216,21 +332,27 @@ public class PlayerInput : MonoBehaviour {
 					Command.MoveCommand (startPos, pos, member.ai);
 				}
 			}
-		}
+        }
 
-		if (unit) {
+        if (unit) {
 			for (int i = 0; i < selectedUnits.Count; i++) {
 				Squadmember member = selectedUnits[i];
-                Vector3 startPos = GetCommandStartPos (member);
 
                 if (unit.faction != Faction.Player) {
-					if (!Input.GetButton ("Shift"))
-						member.ai.ClearCommands ();
+                    if (!Input.GetButton ("Shift"))
+                        member.ai.ClearCommands ();
 
-					Command.KillCommand (unit.transform, member.ai, unit.health);
-				}
-			}
+                    if (currentAdvCommand == AdvancedCommand.Execute)
+                        Command.ExecuteCommand (unit.transform, member.ai, unit.health);
+                    else
+                        Command.KillCommand (unit.transform, member.ai, unit.health);
+                }
+            }
 		}
+
+        if (!Input.GetButton("Shift")) {
+            SetAdvancedCommand (0);
+        }
 	}
 
     public void PickUpItem (Vector3 position) {
@@ -271,7 +393,9 @@ public class PlayerInput : MonoBehaviour {
             Destroy (child.gameObject);
 
         if (itemInHand.item) {
+            cur.itemIconImageParent.SetActive (true);
             cur.representativeObject.SetActive (true);
+            cur.itemIconImage.texture = itemInHand.item.GetIcon ();
 
             GameObject newModel = itemInHand.item.GetModel ();
 
@@ -279,6 +403,7 @@ public class PlayerInput : MonoBehaviour {
             newModel.transform.position = rep.position;
             newModel.transform.rotation = rep.rotation;
         } else {
+            cur.itemIconImageParent.SetActive (false);
             cur.representativeObject.SetActive (false);
         }
     }

@@ -17,7 +17,7 @@ public class ItemDropper : MonoBehaviour {
 	
 	void Drop () {
         ItemPrefab prefab = dropItems[Random.Range (0, dropItems.Length)];
-        GameObject newItem = PhysicalItem.Create (prefab.GetItem (), 1, dropPosition.position, Quaternion.Euler (0f, Random.Range (0f, 360f), 0f)).gameObject;
+        PhysicalItem.Create (prefab.GetItem (), 1, dropPosition.position, Quaternion.Euler (0f, Random.Range (0f, 360f), 0f));
         dropped++;
         if (dropped < dropAmount)
             Invoke ("Drop", dropRate);

@@ -30,6 +30,15 @@ public class PhysicalItem : MonoBehaviour {
         return newItem.GetComponent<PhysicalItem>();
     }
 
+    public void PlaceInSquadInventory () {
+        PlaceInInventory (Squad.activeSquad.sharedInventory);
+    }
+
+    public void PlaceInInventory (Inventory inventory) {
+        inventory.PlaceItems (singleSlot);
+        Destroy (gameObject);
+    }
+
     void UpdateMesh () {
         model = singleSlot.item.GetModel ();
         boxCollider.size = ItemRender.GetObjectBounds (model).size;

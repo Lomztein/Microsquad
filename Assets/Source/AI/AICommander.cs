@@ -43,7 +43,6 @@ public class AICommander : MonoBehaviour {
 	}
 
 	void FullAttackOnObjective (int amount) {
-		Vector3[] positions = Micromanagement.GetSpriralPositions (1f, currentUnits.Count);
 		for (int i = 0; i < currentUnits.Count; i++) {
 			if (i < amount * threatCompensation) {
 				

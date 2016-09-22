@@ -14,6 +14,7 @@ public class Character : Unit {
 	public CharacterStats stats;
 	private CharacterStats multipliers;
 	public float altitude;
+    public float damageBlocking;
 
     public bool alert;
 
@@ -22,6 +23,7 @@ public class Character : Unit {
 	public Inventory inventory;
 	public Weapon activeWeapon;
     public CharacterEquipment.Equipment toolSlot;
+    public List<Armor> armorPieces;
 
 	[Header ("Animation")]
 	public Animator animator;
@@ -49,6 +51,7 @@ public class Character : Unit {
 	}
 
     private void InitializeEquipment () {
+        armorPieces = new List<Armor> ();
         foreach (CharacterEquipment.Equipment e in equipment.slots) {
             e.item = Inventory.Slot.CreateSlot ();
             e.character = this;
@@ -63,6 +66,14 @@ public class Character : Unit {
             return activeWeapon.CalcDPS ();
         return 0;
 	}
+
+    public int CalcArmor () {
+        int value = 0;
+        for (int i = 0; i < armorPieces.Count; i++) {
+            value += armorPieces[i].armorRating;
+        }
+        return value;
+    }
 
 	public Vector2 CalcOptics () {
         if (activeWeapon)
@@ -109,15 +120,19 @@ public class Character : Unit {
 
             slot.item.ForceButtonUpdate ();
             UpdateItem (slot);
+
+            SendMessage ("OnEquipmentChanged", SendMessageOptions.DontRequireReceiver);
             return;
         }
 
         slot.item.ForceButtonUpdate ();
         fromSlot.MoveItem (slot.item);
         UpdateItem (slot);
-	}
 
-	public float CalcWepWeight () {
+        SendMessage ("OnEquipmentChanged", SendMessageOptions.DontRequireReceiver);
+    }
+
+    public float CalcWepWeight () {
         if (activeWeapon)
             return activeWeapon.combinedStats.weight;
         return 0;
@@ -237,12 +252,23 @@ public class Character : Unit {
     }
 
 	private bool isDead = false;
-	void OnTakeDamage (Damage d) {
-		health -= d.damage;
-		if (health <= 0 && !isDead) {
-            Die (d);
-		}
-	}
+	public void OnTakeDamage (Damage d) {
+        if (d.damage > 0) {
+            // Calculate damage based on armor.
+            int damage = d.damage;
+            foreach (Armor armor in armorPieces) {
+                float piercePower = Mathf.Max (armor.hardness / Mathf.Min (d.armorPiercing, 0.01f), 0f);
+                damage -= Mathf.RoundToInt (armor.armorRating * piercePower);
+            }
+
+		    health -= damage;
+		    if (health <= 0 && !isDead) {
+                Die (d);
+		    }
+        }else {
+            health -= d.damage;
+        }
+    }
 
     public void UpdateAmmunition () {
         if (activeWeapon)
