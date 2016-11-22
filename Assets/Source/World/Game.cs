@@ -8,6 +8,8 @@ public class Game : MonoBehaviour {
 	[Header ("Game Information")]
 	public Squad currentSquad;
     public static string commanderName = "The Commander";
+    public Color[] itemRarityColors;
+    public Material[] itemRarityMaterials;
 
 	[Header ("References")]
 	public static Game game;
@@ -54,6 +56,14 @@ public class Game : MonoBehaviour {
 	public static Material FactionMaterial (Faction faction) {
 		return game.factionColorMaterials[(int)faction];
 	}
+
+    public static Color RarityColor (ItemPrefab.Rarity rarity) {
+        return game.itemRarityColors[(int)rarity];
+    }
+
+    public static Material RarityMaterial (ItemPrefab.Rarity rarity) {
+        return game.itemRarityMaterials[(int)rarity];
+    }
 
 	public static void AddMessage (string message) {
 		messages.Add (message);
