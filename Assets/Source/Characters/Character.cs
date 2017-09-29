@@ -257,8 +257,7 @@ public class Character : Unit {
             // Calculate damage based on armor.
             int damage = d.damage;
             foreach (Armor armor in armorPieces) {
-                float piercePower = Mathf.Max (armor.hardness / Mathf.Min (d.armorPiercing, 0.01f), 0f);
-                damage -= Mathf.RoundToInt (armor.armorRating * piercePower);
+                damage -= armor.armorRating;
             }
 
 		    health -= damage;

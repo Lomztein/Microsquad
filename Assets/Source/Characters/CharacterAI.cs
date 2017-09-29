@@ -13,14 +13,14 @@ public class CharacterAI : MonoBehaviour {
     [Header ("AI")]
     public Character character;
     public GameObject objective;
-    public NavMeshAgent navigationAgent;
+    public UnityEngine.AI.NavMeshAgent navigationAgent;
     public float fieldOfView;
 
     [Header ("Commands")]
     public List<Command> commands = new List<Command>();
     private Command currentCommand;
     public State state;
-    public NavMeshPath pathToCommand;
+    public UnityEngine.AI.NavMeshPath pathToCommand;
     public int pathIndex;
     private Transform pointer;
 
@@ -50,7 +50,7 @@ public class CharacterAI : MonoBehaviour {
         objective = GameObject.FindGameObjectWithTag ("Objective");
         StartCoroutine (AIUpdate ());
 
-        navigationAgent = GetComponent<NavMeshAgent> ();
+        navigationAgent = GetComponent<UnityEngine.AI.NavMeshAgent> ();
         GameObject p = new GameObject ("Pointer");
         pointer = p.transform;
         pointer.transform.position = transform.position;
@@ -131,7 +131,7 @@ public class CharacterAI : MonoBehaviour {
     }
 
     private void FindPathToCommand () {
-        pathToCommand = new NavMeshPath ();
+        pathToCommand = new UnityEngine.AI.NavMeshPath ();
         navigationAgent.CalculatePath (commands[0].position, pathToCommand);
         pathIndex = 1;
     }

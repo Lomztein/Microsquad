@@ -7,6 +7,8 @@ public class Room : MonoBehaviour {
 	public Vector3 size;
 	private Bounds bounds;
 
+	public Mesh roomNavMesh;
+
 	void OnDrawGizmos () {
 		Gizmos.DrawWireCube (transform.position + new Vector3 (0f, Size ().y / 2f, 0f), Size ());
 	}

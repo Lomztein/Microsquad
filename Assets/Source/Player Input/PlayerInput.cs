@@ -209,6 +209,10 @@ public class PlayerInput : MonoBehaviour {
 				selector.center = new Vector3 (middle.x, 0f, middle.z);
 				selector.size = mouseDragStart - worldMousePos;
 				selector.size = new Vector3 (selector.size.x, 2f, selector.size.z);
+
+                if (currentAdvCommand != AdvancedCommand.None) {
+                    SetAdvancedCommand (0);
+                }
 			}
 
             if (!advancedCommandOverride) {

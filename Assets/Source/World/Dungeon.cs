@@ -45,7 +45,7 @@ public class Dungeon : MonoBehaviour {
 		int curChecks = 0;
 
         for (int i = 0; i < roomPrefabs.Length; i++) {
-            NavMeshObstacle[] obstacles = roomPrefabs[i].GetComponentsInChildren<NavMeshObstacle> ();
+            UnityEngine.AI.NavMeshObstacle[] obstacles = roomPrefabs[i].GetComponentsInChildren<UnityEngine.AI.NavMeshObstacle> ();
             for (int j = 0; j < obstacles.Length; j++) {
                 obstacles[j].carving = false;
             }
@@ -160,7 +160,7 @@ public class Dungeon : MonoBehaviour {
 			yield return new WaitForFixedUpdate ();
 		}
 
-        NavMeshObstacle[] obs = GetComponentsInChildren<NavMeshObstacle> ();
+        UnityEngine.AI.NavMeshObstacle[] obs = GetComponentsInChildren<UnityEngine.AI.NavMeshObstacle> ();
         for (int j = 0; j < obs.Length; j++) {
             obs[j].carving = true;
         }
