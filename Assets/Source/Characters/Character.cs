@@ -5,30 +5,30 @@ using System.Collections.Generic;
 public class Character : Unit {
 
     // TODO: Move all commmand related stuff into a seperate "BasicCharacter" class.
-	[Header ("Basics")]
-	public CharacterController character;
-	public float speed;
+    [Header ("Basics")]
+    public CharacterController character;
+    public float speed;
     public CharacterAI ai;
 
-	[Header ("Stats")]
-	public CharacterStats stats;
-	private CharacterStats multipliers;
-	public float altitude;
+    [Header ("Stats")]
+    public CharacterStats stats;
+    private CharacterStats multipliers;
+    public float altitude;
     public float damageBlocking;
 
     public bool alert;
 
-	[Header ("Equipment")]
-	public CharacterEquipment equipment;
-	public Inventory inventory;
-	public Weapon activeWeapon;
-    public CharacterEquipment.Equipment toolSlot;
+    [Header ("Equipment")]
+    public CharacterEquipment equipment;
+    public Inventory inventory;
+    public Weapon activeWeapon;
+    public CharacterEquipment.Slot toolSlot;
     public List<Armor> armorPieces;
 
-	[Header ("Animation")]
-	public Animator animator;
+    [Header ("Animation")]
+    public Animator animator;
 
-	/*void CombineStatBonuses () {
+    /*void CombineStatBonuses () {
 		multipliers = new CharacterStats (1f, 1f, 1f);
 
 		List<CharacterEquipment.Armor> armor = new List<CharacterEquipment.Armor>();
@@ -43,56 +43,62 @@ public class Character : Unit {
 		}
 	}*/
 
-	public void Awake () {
-		animator.StartPlayback ();
-		animator.speed = 1f;
+    public void Awake() {
+        if (animator) {
+            animator.StartPlayback ();
+            animator.speed = 1f;
+        }
 
         InitializeEquipment ();
-	}
+    }
 
-    private void InitializeEquipment () {
+    private void InitializeEquipment() {
         armorPieces = new List<Armor> ();
-        foreach (CharacterEquipment.Equipment e in equipment.slots) {
+        foreach (CharacterEquipment.Slot e in equipment) {
             e.item = Inventory.Slot.CreateSlot ();
             e.character = this;
             e.Update ();
         }
 
-        toolSlot = FindSlotByType (CharacterEquipment.Slot.Hand);
+        toolSlot = FindSlotByType (CharacterEquipment.Type.Hand);
     }
 
-	public float CalcDPS () {
+    public float CalcDPS() {
         if (activeWeapon)
             return activeWeapon.CalcDPS ();
         return 0;
-	}
+    }
 
-    public int CalcArmor () {
+    public int CalcArmor() {
         int value = 0;
         for (int i = 0; i < armorPieces.Count; i++) {
-            value += armorPieces[i].armorRating;
+            value += armorPieces [ i ].armorRating;
         }
         return value;
     }
 
-	public Vector2 CalcOptics () {
+    public Vector2 CalcOptics() {
         if (activeWeapon)
             return activeWeapon.GetOpticSpeed ();
         return Vector2.zero;
     }
 
-    public void ChangeEquipment (CharacterEquipment.Slot slotType, CharacterEquipment.Equipment slot, Inventory.Slot fromSlot) {
-		if (fromSlot.item && slotType != fromSlot.item.prefab.slotType)
-			return;
+    public void ChangeEquipment(CharacterEquipment.Slot slotType, CharacterEquipment.Slot slot, Inventory.Slot fromSlot) {
+        if (fromSlot.item) {
+            IEquipable equipable = fromSlot.item.prefab as IEquipable;
+            if (equipable != null && slotType != equipable.GetSlotType ())
+                return;
+        }
 
         // Handle removing incompatable ammo if new weapon type is placed.
         if (fromSlot.item && slotType == CharacterEquipment.Slot.Hand) {
-            CharacterEquipment.Equipment ammoSlot = FindSlotByType (CharacterEquipment.Slot.Ammo);
+            CharacterEquipment.Slot ammoSlot = FindSlotByType (CharacterEquipment.Slot.Ammo);
 
             if (ammoSlot.item.item) {
-                AmmoPrefab.AmmoType ammoType = ammoSlot.item.item.attributes.GetAttribute<AmmoPrefab.AmmoType> ("AmmoType");
+                IAmmo ammo = ammoSlot.item.item.prefab as IAmmo;
+                AmmoPrefab.Type ammoType = ammo.GetAmmoType ();
                 SavedWeapon saved = SavedWeapon.LoadFromString (fromSlot.item.metadata);
-                AmmoPrefab.AmmoType weaponType = WeaponGenerator.cur.weaponClasses[saved.classID].bodies[saved.bodyID].GetComponent<WeaponBody> ().ammoType;
+                AmmoPrefab.Type weaponType = WeaponGenerator.cur.weaponClasses [ saved.classID ].bodies [ saved.bodyID ].GetComponent<WeaponBody> ().ammoType;
 
                 if (weaponType != ammoType) {
                     inventory.PlaceItems (ammoSlot.item);
@@ -104,11 +110,12 @@ public class Character : Unit {
         }
 
         // Handle specifics when swapping ammunition.
-        if (fromSlot.item && slotType == CharacterEquipment.Slot.Ammo) {
-            AmmoPrefab.AmmoType ammoType = fromSlot.item.attributes.GetAttribute<AmmoPrefab.AmmoType> ("AmmoType");
+        if (fromSlot.item && slotType == CharacterEquipment.Slot.RAmmo || slotType == CharacterEquipment.Slot.LAmmo) {
+            IAmmo ammo = fromSlot.item.prefab as IAmmo;
+            AmmoPrefab.Type ammoType = ammo.GetAmmoType ();
 
             if (activeWeapon) {
-                if (activeWeapon.body.ammoType == ammoType) {
+                if ((activeWeapon.body.ammoType & ammoType) != 0) {
                     int space = Mathf.Min (activeWeapon.body.magazine.maxAmmo - slot.item.count, fromSlot.count);
 
                     if (space > 0) {
@@ -132,56 +139,56 @@ public class Character : Unit {
         SendMessage ("OnEquipmentChanged", SendMessageOptions.DontRequireReceiver);
     }
 
-    public float CalcWepWeight () {
+    public float CalcWepWeight() {
         if (activeWeapon)
             return activeWeapon.combinedStats.weight;
         return 0;
     }
 
-    public void WeaponRecoil ( Transform weapon, float recoil ) {
+    public void WeaponRecoil(Transform weapon, float recoil) {
         recoil /= stats.strength;
         weapon.position -= weapon.forward * recoil;
         weapon.eulerAngles += new Vector3 (recoil, 0.25f * Random.Range (-recoil * 0.25f, recoil * 0.25f), 0f);
     }
 
-    void UpdateItem (CharacterEquipment.Equipment slot) {
-		slot.Update ();
-	}
-
-	void ResetAltitude () {
-		Ray ray = new Ray (transform.position, Vector3.down);
-		RaycastHit hit;
-
-		if (Physics.Raycast (ray, out hit, Mathf.Infinity, Game.game.terrainLayer))
-		    transform.position = hit.point + Vector3.up * (altitude + 0.1f);
-	}
-
-	public virtual void FixedUpdate () {
-		ResetAltitude ();
+    void UpdateItem(CharacterEquipment.Slot slot) {
+        slot.Update ();
     }
 
-	public bool ObjectVisibleFromHeadbone (Transform other) {
-		Transform head = FindSlotByType (CharacterEquipment.Slot.Head).transform;
-		Ray ray = new Ray (head.position, (other.position + Vector3.up * 1f) - head.position);
-		RaycastHit hit;
+    void ResetAltitude() {
+        Ray ray = new Ray (transform.position, Vector3.down);
+        RaycastHit hit;
+
+        if (Physics.Raycast (ray, out hit, Mathf.Infinity, Game.game.terrainLayer))
+            transform.position = hit.point + Vector3.up * (altitude + 0.1f);
+    }
+
+    public virtual void FixedUpdate() {
+        ResetAltitude ();
+    }
+
+    public bool ObjectVisibleFromHeadbone(Transform other) {
+        Transform head = FindSlotByType (CharacterEquipment.Slot.Head).transform;
+        Ray ray = new Ray (head.position, (other.position + Vector3.up * 1f) - head.position);
+        RaycastHit hit;
 
         Debug.DrawLine (head.position, other.position);
         float distance = Vector3.Distance (head.position, other.position);
 
-		if (Physics.SphereCast (ray, 0.15f, out hit, distance, Game.game.terrainLayer))
-			return false;
+        if (Physics.SphereCast (ray, 0.15f, out hit, distance, Game.game.terrainLayer))
+            return false;
 
-		return true;
-	}
+        return true;
+    }
 
-   
 
-    public void CMInspect () {
+
+    public void CMInspect() {
         CharacterInspectorGUI.InspectCharacter (this, new Vector2 (Screen.width / 2f, Screen.height / 2f + 100));
     }
 
-    public CharacterEquipment.Equipment FindSlotByName (string slotName) {
-        foreach (CharacterEquipment.Equipment e in equipment.slots) {
+    public CharacterEquipment.Slot FindSlotByName(string slotName) {
+        foreach (CharacterEquipment.Slot e in equipment.slots) {
             if (e.name == slotName)
                 return e;
         }
@@ -189,8 +196,8 @@ public class Character : Unit {
         return null;
     }
 
-    public CharacterEquipment.Equipment FindSlotByType (CharacterEquipment.Slot slotType) {
-        foreach (CharacterEquipment.Equipment e in equipment.slots) {
+    public CharacterEquipment.Slot FindSlotByType(CharacterEquipment.Slot slotType) {
+        foreach (CharacterEquipment.Slot e in equipment.slots) {
             if (e.slot == slotType)
                 return e;
         }
@@ -198,22 +205,22 @@ public class Character : Unit {
         return null;
     }
 
-	void EquipWeapon () {
-	}
+    void EquipWeapon() {
+    }
 
-    public void OnEquip (CharacterEquipment.Equipment slot, GameObject equipment) {
+    public void OnEquip(CharacterEquipment.Slot slot, GameObject equipment) {
         UpdatePose ();
     }
 
-    public void OnDeEquip () {
+    public void OnDeEquip() {
         UpdatePose ();
     }
 
-    void UpdatePose () {
+    void UpdatePose() {
         if (isDead)
             return;
 
-        GameObject tool = FindSlotByType (CharacterEquipment.Slot.Hand).equippedItem;
+        GameObject tool = FindSlotByType (CharacterEquipment.Slot.RHand).equippedItem;
         Weapon wep = tool.GetComponentInChildren<Weapon> ();
         if (wep) {
             int type = 0;
@@ -238,21 +245,21 @@ public class Character : Unit {
                 if (i.type == EquippedItem.Type.Tool) {
                     animator.SetInteger ("ToolType", 1);
                 }
-            }else
+            } else
                 animator.SetInteger ("ToolType", 0);
         }
     }
 
-    void DropLooseEquipment () {
-        foreach (CharacterEquipment.Equipment e in equipment.slots) {
+    void DropLooseEquipment() {
+        foreach (CharacterEquipment.Slot e in equipment.slots) {
             if (e.item.item && e.dropOnDeath) {
                 Game.game.StartCoroutine (e.Drop (0.1f));
             }
         }
     }
 
-	private bool isDead = false;
-	public void OnTakeDamage (Damage d) {
+    private bool isDead = false;
+    public void OnTakeDamage(Damage d) {
         if (d.damage > 0) {
             // Calculate damage based on armor.
             int damage = d.damage;
@@ -260,30 +267,30 @@ public class Character : Unit {
                 damage -= armor.armorRating;
             }
 
-		    health -= damage;
-		    if (health <= 0 && !isDead) {
+            health -= damage;
+            if (health <= 0 && !isDead) {
                 Die (d);
-		    }
-        }else {
+            }
+        } else {
             health -= d.damage;
         }
     }
 
-    public void UpdateAmmunition () {
+    public void UpdateAmmunition() {
         if (activeWeapon)
             activeWeapon.UpdateAmmunition ();
     }
 
-    private void Die (Damage d) {
+    private void Die(Damage d) {
         RagdollHandler rag = GetComponent<RagdollHandler> ();
         rag.Ragdoll ();
         rag.OnTakeDamage (d);
         isDead = true;
 
-        Component[] components = GetComponents<Component> ();
+        Component [ ] components = GetComponents<Component> ();
         for (int i = 0; i < components.Length; i++) {
-            if ((components[i] as Transform) == null)
-                Destroy (components[i]);
+            if ((components [ i ] as Transform) == null)
+                Destroy (components [ i ]);
         }
 
         if (faction == Faction.Player)
@@ -293,116 +300,42 @@ public class Character : Unit {
         DropLooseEquipment ();
 
         int layer = LayerMask.NameToLayer ("Ragdoll");
-        Collider[] colliders = GetComponentsInChildren<Collider> ();
+        Collider [ ] colliders = GetComponentsInChildren<Collider> ();
         for (int i = 0; i < colliders.Length; i++) {
-            colliders[i].gameObject.tag = "DeadCharacter";
-            colliders[i].gameObject.layer = layer;
+            colliders [ i ].gameObject.tag = "DeadCharacter";
+            colliders [ i ].gameObject.layer = layer;
         }
     }
 
-    public Inventory.Slot FindAmmoByType (AmmoPrefab.AmmoType type) {
+    public Inventory.Slot FindAmmoByType(AmmoPrefab.Type type) {
         foreach (Inventory.Slot slot in inventory.slots) {
-            if (slot.item && slot.item.prefab.type == ItemPrefab.Type.Ammunition) {
+            if (slot.item) {
+                IAmmo ammo = slot.item.prefab as IAmmo;
+                if (ammo != null) {
 
-                AmmoPrefab.AmmoType t = slot.item.attributes.GetAttribute<AmmoPrefab.AmmoType> ("AmmoType");
-
-                if (t == type)
-                    return slot;
+                    if ((ammo.GetAmmoType () & type) != 0)
+                        return slot;
+                }
             }
         }
-
         return null;
     }
 }
 
-[System.Serializable]
-public struct CharacterStats {
-	
-	public float strength;
-	public float accuracy;
-	public float speed;
-    public float recoilRecovery;
+    [System.Serializable]
+    public struct CharacterStats {
 
-    public CharacterStats (float _strength = 1f, float _accuracy = 1f, float _speed = 1f, float _recoilRecovery = 15f) {
-		strength = _strength;
-		accuracy = _accuracy;
-		speed = _speed;
-        recoilRecovery = _recoilRecovery;
-	}
-	
-}
+        public float strength;
+        public float accuracy;
+        public float speed;
+        public float recoilRecovery;
 
-[System.Serializable]
-public class CharacterEquipment {
-
-	public enum Slot { Hand, Head, Chest, Legs, Ammo, None };
-    public enum InspectorSide { Left, Right }
-    public Equipment[] slots;
-
-	[System.Serializable]
-	public class Equipment {
-
-        public string name;
-		public Slot slot;
-		public Inventory.Slot item;
-		public GameObject equippedItem;
-		public Transform transform;
-
-        public bool dropOnDeath;
-        public bool spawnOnEquip;
-
-        public InspectorSide side;
-        public Texture defualtSlotImage;
-
-		public Character character;
-
-        public virtual void Update () {
-            if (equippedItem) {
-                equippedItem.SendMessage ("OnUnEquip", new EquipMessage (character, "", this), SendMessageOptions.DontRequireReceiver);
-                character.OnDeEquip ();
-                Object.Destroy (equippedItem);
-            }
-
-            if (spawnOnEquip && item && item.item) {
-                GameObject newTool = (GameObject)Object.Instantiate (item.item.prefab.gameObject, transform.position, transform.rotation);
-
-                newTool.transform.position = transform.position;
-                newTool.transform.rotation = transform.rotation;
-                newTool.transform.parent = transform;
-
-                equippedItem = newTool;
-                    
-                newTool.SendMessage ("OnEquip", new EquipMessage (character, item.item.metadata, this));
-                character.OnEquip (this, newTool);
-            }
+        public CharacterStats(float _strength = 1f, float _accuracy = 1f, float _speed = 1f, float _recoilRecovery = 15f) {
+            strength = _strength;
+            accuracy = _accuracy;
+            speed = _speed;
+            recoilRecovery = _recoilRecovery;
         }
 
-        public IEnumerator Drop (float waitTime) {
-            yield return new WaitForSeconds (waitTime);
-
-            Rigidbody body = transform.GetComponentInParent<Rigidbody> ();
-            GameObject pItem = PhysicalItem.Create (item.item, item.count, transform.position, transform.rotation).gameObject;
-            Rigidbody drop = pItem.GetComponent<Rigidbody> ();
-
-            drop.velocity = body.velocity;
-            drop.angularVelocity = body.angularVelocity;
-
-            item = null;
-            Update ();
-        }
-
-        public struct EquipMessage {
-
-            public Character character;
-            public string metadata;
-            public Equipment slot;
-
-            public EquipMessage (Character ch, string me, Equipment sl) {
-                character = ch;
-                metadata = me;
-                slot = sl;
-            }
-
-        }
     }
-}
+

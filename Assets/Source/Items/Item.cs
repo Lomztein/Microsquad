@@ -18,7 +18,7 @@ public class Item : ScriptableObject {
 
         // To get a representative model of the object, the gameObject is spawned, and all except for rendering and transform is removed from it.
         GameObject obj = Instantiate (prefab.gameObject);
-        obj.SendMessage ("OnEquip", new CharacterEquipment.Equipment.EquipMessage (null, metadata, null), SendMessageOptions.DontRequireReceiver);
+        obj.SendMessage ("OnEquip", new CharacterEquipment.Slot.EquipMessage (null, metadata, null), SendMessageOptions.DontRequireReceiver);
         Transform[] all = obj.GetComponentsInChildren<Transform> ();
         for (int i = 0; i < all.Length; i++) {
             Component[] components = all[i].GetComponents<Component> ();
@@ -52,5 +52,9 @@ public class Item : ScriptableObject {
 
     public static bool Equals ( Item slotOne, Item slotTwo ) {
         return (slotOne && slotTwo && slotOne.prefab == slotTwo.prefab && slotOne.metadata == slotTwo.metadata);
+    }
+
+    public static implicit operator ItemPrefab(Item item) {
+        return item.prefab;
     }
 }

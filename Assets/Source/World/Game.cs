@@ -97,8 +97,7 @@ public class Game : MonoBehaviour {
 	}
 
     IEnumerator IntroDialog () {
-        yield return DialogGUI.RunDialog (Game.commanderName, "In here, in the forgotten prison of the ancient past, I might be able to find someone to join my cause of overthrowing the ancient evil of ancientness.",
-            "Any of the prisoners in here must surely be enemies of my enemy, and therefore an ally.", "I must right click on them with my hypothetical mouse, and click \"Recruit\" to recruit one.");
+        yield return DialogGUI.RunDialog ("MICROSQUAD PROTOTYPE", "Hello, and welcome to the test area of Project Microsquad.", "This area is used to test out features in a manner outside of the game, for easier testing.");
     }
 
 	void OnGUI () {

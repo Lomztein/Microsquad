@@ -3,7 +3,7 @@ using System.Collections;
 
 public class WeaponSpawn : EquippedItem {
 
-	public void OnEquip (CharacterEquipment.Equipment.EquipMessage message) {
+	public void OnEquip (CharacterEquipment.Slot.EquipMessage message) {
 		GameObject wep = SavedWeapon.LoadFromString (message.metadata).Build ();
 		wep.transform.position = transform.position;
 		wep.transform.rotation = transform.rotation;
@@ -12,7 +12,7 @@ public class WeaponSpawn : EquippedItem {
         Weapon w = wep.GetComponent<Weapon> ();
         if (message.character) {
             w.character = message.character;
-            CharacterEquipment.Equipment slot = message.character.FindSlotByType (CharacterEquipment.Slot.Ammo);
+            CharacterEquipment.Slot slot = message.character.FindSlotByType (CharacterEquipment.Slot.Ammo);
             if (slot != null)
                 w.characterAmmoSlot = slot.item;
 
@@ -26,7 +26,7 @@ public class WeaponSpawn : EquippedItem {
         w.UpdateAmmunition ();
 	}
 
-    public void OnUnEquip ( CharacterEquipment.Equipment.EquipMessage message ) {
+    public void OnUnEquip ( CharacterEquipment.Slot.EquipMessage message ) {
         message.character.activeWeapon = null;
     }
 }

@@ -98,8 +98,7 @@ public class Weapon : MonoBehaviour {
     public void Reload () {
         // When the weapon needs to reload, it first searches its parent character for an ammo slot.
         // If no ammo slot is found, it simply reloads all bullets, so that certain characters can have infinite ammo if needed.
-        // How it will handle which projectile is used I haven't found out yet, perhaps use an AmmoPrefab object to define that.
-        CharacterEquipment.Equipment slot = character.FindSlotByType (CharacterEquipment.Slot.Ammo);
+        CharacterEquipment.Slot slot = character.FindSlotByType (CharacterEquipment.Slot.Ammo);
 
         int maxTries = 128;
         while (characterAmmoSlot.count != body.magazine.maxAmmo) {

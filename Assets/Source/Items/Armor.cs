@@ -9,11 +9,11 @@ public class Armor : EquippedItem {
     // Armor hardness defines the armors resistance against armor piercing rounds.
     public float hardness;
 
-    public void OnEquip (CharacterEquipment.Equipment.EquipMessage message) {
+    public void OnEquip (CharacterEquipment.Slot.EquipMessage message) {
         message.character.armorPieces.Add (this);
     }
 
-    public void UnEquip (CharacterEquipment.Equipment.EquipMessage message) {
+    public void UnEquip (CharacterEquipment.Slot.EquipMessage message) {
         message.character.armorPieces.Remove (this);
     }
 }

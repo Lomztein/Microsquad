@@ -69,7 +69,7 @@ public class CharacterInspectorGUI : MonoBehaviour {
     void CreateEquipmentButtons () {
         GameObject buttonPrefab = Resources.Load<GameObject> ("GUI/EquipmentButton");
         for (int i = 0; i < character.equipment.slots.Length; i++) {
-            CharacterEquipment.Equipment cur = character.equipment.slots[i];
+            CharacterEquipment.Slot cur = character.equipment.slots[i];
             GameObject newButton = Instantiate (buttonPrefab);
 
             CharacterInspectorButton butt = newButton.GetComponent<CharacterInspectorButton> ();

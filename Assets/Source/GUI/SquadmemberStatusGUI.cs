@@ -12,7 +12,7 @@ public class SquadmemberStatusGUI : MonoBehaviour {
     public RawImage squadmemberWeapon;
     public Text ammoText;
 
-    private CharacterEquipment.Equipment ammoSlot;
+    private CharacterEquipment.Slot ammoSlot;
 
     public void UpdateAll () {
         UpdateStatus ();
@@ -30,9 +30,9 @@ public class SquadmemberStatusGUI : MonoBehaviour {
     public void OnButtonClicked () {
         if (PlayerInput.itemInHand.item) {
             Item item = PlayerInput.itemInHand.item;
-            if (item.prefab.type == ItemPrefab.Type.Consumeable) {
-                GameObject obj = Instantiate (item.prefab.gameObject);
-                obj.GetComponent<Consumeable> ().Consume (squadmember);
+            IConsumeable consumeable = item.prefab as IConsumeable;
+            if (consumeable != null) {
+                consumeable.Consume (squadmember);
                 PlayerInput.itemInHand.ChangeCount (-1);
             }
         }else {
@@ -47,7 +47,7 @@ public class SquadmemberStatusGUI : MonoBehaviour {
     }
 
     public void UpdateWeapon () {
-        CharacterEquipment.Equipment weaponSlot = squadmember.FindSlotByType (CharacterEquipment.Slot.Hand);
+        CharacterEquipment.Slot weaponSlot = squadmember.FindSlotByType (CharacterEquipment.Slot.Hand);
         if (weaponSlot.item.item) {
             squadmemberWeapon.gameObject.SetActive (true);
             squadmemberWeapon.texture = weaponSlot.item.item.GetIcon ();

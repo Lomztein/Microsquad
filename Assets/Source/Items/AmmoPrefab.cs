@@ -1,15 +1,26 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System;
 
-public class AmmoPrefab : ItemPrefab {
+public class AmmoPrefab : ItemPrefab, IAmmo {
 
-    public enum AmmoType { Pistol, Rifle, Shotgun, Sniper, Rocket, Energy, Magic }
+    [Flags]
+    public enum Type {
+        Pistol = 1, Rifle = 2, Shotgun = 4, Sniper = 8, Rocket = 16, Energy = 32, Magic = 64
+    }
 
-    public AmmoType ammoType;
+    public Type type;
+    public Mesh shellMesh;
 
-    public override Item GetItem () {
-        Item item = base.GetItem ();
-        item.attributes.AddAttribute ("AmmoType", ammoType);
-        return item;
+    public GameObject GetProjectileObject() {
+        return gameObject;
+    }
+
+    public Type GetAmmoType() {
+        return type;
+    }
+
+    public Mesh GetShellMesh() {
+        return shellMesh;
     }
 }

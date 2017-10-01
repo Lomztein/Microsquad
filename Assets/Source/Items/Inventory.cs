@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System;
+using System.Linq;
 
 public class Inventory : MonoBehaviour {
 
@@ -14,9 +16,13 @@ public class Inventory : MonoBehaviour {
         }
     }
 
-    public Slot FindItemByType (ItemPrefab.Type type) {
+    public Slot FindItemByPredicate(Func<Slot, bool> predicate) {
+        return slots.FirstOrDefault (predicate);
+    }
+
+    public Slot FindItemByType (Type type) {
         foreach (Slot slot in slots) {
-            if (slot.item && slot.item.prefab.type == type)
+            if (slot.item && type.IsInstanceOfType (slot.item.prefab))
                 return slot;
         }
 

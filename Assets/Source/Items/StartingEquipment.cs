@@ -28,7 +28,7 @@ public class StartingEquipment : MonoBehaviour {
         Character character = GetComponent<Character> ();
         if (character) {
             foreach (Piece p in equipmentPieces) {
-                character.ChangeEquipment (p.item.slotType, character.FindSlotByName (p.slotName), GetItem (p));
+                character.ChangeEquipment ((p.item as IEquipable).GetSlotType (), character.FindSlotByName (p.slotName), GetItem (p));
             }
         }
 

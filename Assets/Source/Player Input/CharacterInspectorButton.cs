@@ -11,7 +11,7 @@ public class CharacterInspectorButton : MonoBehaviour {
     public RawImage image;
     public Text text;
 
-    public CharacterEquipment.Equipment equipment;
+    public CharacterEquipment.Slot equipment;
     public HoverContextElement element;
 
 	// Use this for initialization

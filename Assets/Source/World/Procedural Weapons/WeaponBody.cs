@@ -35,7 +35,7 @@ public class WeaponBody : WeaponPart {
 	public Weapon weapon;
 	private bool isBuild;
 	public AnimType animationType;
-    public AmmoPrefab.AmmoType ammoType;
+    public AmmoPrefab.Type ammoType;
     public ItemPrefab currentAmmoPrefab;
 
     [Header ("Audio")]

@@ -12,14 +12,16 @@ public class Squadmember : Character {
 
     new void Awake () {
         base.Awake ();
+    }
+
+    void Start () {
         if (!squad) {
             Squad spawnSquad = GetComponentInParent<Squad> ();
             if (spawnSquad)
                 spawnSquad.AddMember (this);
+        } else {
+            squad.AddMember (this);
         }
-    }
-
-    void Start () {
         statusGUI.UpdateAll ();
     }
 
