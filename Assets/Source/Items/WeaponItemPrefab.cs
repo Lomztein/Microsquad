@@ -1,15 +1,22 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class WeaponItemPrefab : ItemPrefab, IEquipable {
+public class WeaponItemPrefab : ItemPrefab, IEquipable, IContainsItem {
 
-    public static CharacterEquipment.Slot weaponSlot;
+    public CharacterEquipment.Type type = CharacterEquipment.Type.Hand;
+    public Inventory.Slot slot;
+
+    public Inventory.Slot Slot {
+        get {
+            return slot;
+        }
+    }
 
     public GameObject GetEquipmentObject() {
         return gameObject;
     }
 
-    public CharacterEquipment.Slot GetSlotType() {
-        return weaponSlot;
+    public CharacterEquipment.Type GetSlotType() {
+        return type;
     }
 }

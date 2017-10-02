@@ -19,7 +19,7 @@ public class Character : Unit {
     public bool alert;
 
     [Header ("Equipment")]
-    public CharacterEquipment equipment;
+    public CharacterEquipment.Human equipment;
     public Inventory inventory;
     public Weapon activeWeapon;
     public CharacterEquipment.Slot toolSlot;
@@ -53,8 +53,10 @@ public class Character : Unit {
     }
 
     private void InitializeEquipment() {
+        equipment = new CharacterEquipment.Human (this);
+
         armorPieces = new List<Armor> ();
-        foreach (CharacterEquipment.Slot e in equipment) {
+        foreach (CharacterEquipment.Slot e in equipment.slots.Values) {
             e.item = Inventory.Slot.CreateSlot ();
             e.character = this;
             e.Update ();
@@ -83,53 +85,11 @@ public class Character : Unit {
         return Vector2.zero;
     }
 
-    public void ChangeEquipment(CharacterEquipment.Slot slotType, CharacterEquipment.Slot slot, Inventory.Slot fromSlot) {
+    public void ChangeEquipment(CharacterEquipment.Type slotType, CharacterEquipment.Slot slot, Inventory.Slot fromSlot) {
         if (fromSlot.item) {
             IEquipable equipable = fromSlot.item.prefab as IEquipable;
             if (equipable != null && slotType != equipable.GetSlotType ())
                 return;
-        }
-
-        // Handle removing incompatable ammo if new weapon type is placed.
-        if (fromSlot.item && slotType == CharacterEquipment.Slot.Hand) {
-            CharacterEquipment.Slot ammoSlot = FindSlotByType (CharacterEquipment.Slot.Ammo);
-
-            if (ammoSlot.item.item) {
-                IAmmo ammo = ammoSlot.item.item.prefab as IAmmo;
-                AmmoPrefab.Type ammoType = ammo.GetAmmoType ();
-                SavedWeapon saved = SavedWeapon.LoadFromString (fromSlot.item.metadata);
-                AmmoPrefab.Type weaponType = WeaponGenerator.cur.weaponClasses [ saved.classID ].bodies [ saved.bodyID ].GetComponent<WeaponBody> ().ammoType;
-
-                if (weaponType != ammoType) {
-                    inventory.PlaceItems (ammoSlot.item);
-                }
-
-                // Just to avoid memory being used up or something. Feels right to do this.
-                Destroy (saved);
-            }
-        }
-
-        // Handle specifics when swapping ammunition.
-        if (fromSlot.item && slotType == CharacterEquipment.Slot.RAmmo || slotType == CharacterEquipment.Slot.LAmmo) {
-            IAmmo ammo = fromSlot.item.prefab as IAmmo;
-            AmmoPrefab.Type ammoType = ammo.GetAmmoType ();
-
-            if (activeWeapon) {
-                if ((activeWeapon.body.ammoType & ammoType) != 0) {
-                    int space = Mathf.Min (activeWeapon.body.magazine.maxAmmo - slot.item.count, fromSlot.count);
-
-                    if (space > 0) {
-                        fromSlot.MoveItem (slot.item, space, false);
-                    }
-                }
-                UpdateAmmunition ();
-            }
-
-            slot.item.ForceButtonUpdate ();
-            UpdateItem (slot);
-
-            SendMessage ("OnEquipmentChanged", SendMessageOptions.DontRequireReceiver);
-            return;
         }
 
         slot.item.ForceButtonUpdate ();
@@ -168,7 +128,7 @@ public class Character : Unit {
     }
 
     public bool ObjectVisibleFromHeadbone(Transform other) {
-        Transform head = FindSlotByType (CharacterEquipment.Slot.Head).transform;
+        Transform head = FindSlotByType (CharacterEquipment.Type.Head).transform;
         Ray ray = new Ray (head.position, (other.position + Vector3.up * 1f) - head.position);
         RaycastHit hit;
 
@@ -188,7 +148,7 @@ public class Character : Unit {
     }
 
     public CharacterEquipment.Slot FindSlotByName(string slotName) {
-        foreach (CharacterEquipment.Slot e in equipment.slots) {
+        foreach (CharacterEquipment.Slot e in equipment.slots.Values) {
             if (e.name == slotName)
                 return e;
         }
@@ -196,9 +156,9 @@ public class Character : Unit {
         return null;
     }
 
-    public CharacterEquipment.Slot FindSlotByType(CharacterEquipment.Slot slotType) {
-        foreach (CharacterEquipment.Slot e in equipment.slots) {
-            if (e.slot == slotType)
+    public CharacterEquipment.Slot FindSlotByType(CharacterEquipment.Type slotType) {
+        foreach (CharacterEquipment.Slot e in equipment.slots.Values) {
+            if (e.type == slotType)
                 return e;
         }
 
@@ -220,7 +180,7 @@ public class Character : Unit {
         if (isDead)
             return;
 
-        GameObject tool = FindSlotByType (CharacterEquipment.Slot.RHand).equippedItem;
+        GameObject tool = FindSlotByType (CharacterEquipment.Type.Hand).equippedItem;
         Weapon wep = tool.GetComponentInChildren<Weapon> ();
         if (wep) {
             int type = 0;
@@ -251,7 +211,7 @@ public class Character : Unit {
     }
 
     void DropLooseEquipment() {
-        foreach (CharacterEquipment.Slot e in equipment.slots) {
+        foreach (CharacterEquipment.Slot e in equipment.slots.Values) {
             if (e.item.item && e.dropOnDeath) {
                 Game.game.StartCoroutine (e.Drop (0.1f));
             }

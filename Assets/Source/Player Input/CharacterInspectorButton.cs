@@ -24,7 +24,7 @@ public class CharacterInspectorButton : MonoBehaviour {
     }
 
     public void OnClick () {
-        inspector.character.ChangeEquipment (equipment.slot, equipment, PlayerInput.itemInHand);
+        inspector.character.ChangeEquipment (equipment.type, equipment, PlayerInput.itemInHand);
         UpdateButton ();
 	}
 
@@ -36,10 +36,10 @@ public class CharacterInspectorButton : MonoBehaviour {
             if (equipment.item.count > 1) {
                 text.text = equipment.item.count.ToString ();
             }
-            element.text = equipment.slot.ToString () + " - " + equipment.item.ToString ();
+            element.text = equipment.name.ToString () + " - " + equipment.item.ToString ();
         } else {
             image.texture = defaultIcon;
-            element.text = equipment.slot.ToString ();
+            element.text = equipment.name.ToString ();
         }
         PlayerInput.UpdateItemInHand ();
     }

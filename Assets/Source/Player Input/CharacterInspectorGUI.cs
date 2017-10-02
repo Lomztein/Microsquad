@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using UnityEngine.UI;
+using System.Linq;
 
 public class CharacterInspectorGUI : MonoBehaviour {
 
@@ -68,8 +69,9 @@ public class CharacterInspectorGUI : MonoBehaviour {
 
     void CreateEquipmentButtons () {
         GameObject buttonPrefab = Resources.Load<GameObject> ("GUI/EquipmentButton");
-        for (int i = 0; i < character.equipment.slots.Length; i++) {
-            CharacterEquipment.Slot cur = character.equipment.slots[i];
+        for (int i = 0; i < character.equipment.slots.Count; i++) {
+
+            CharacterEquipment.Slot cur = character.equipment.slots.ElementAt (i).Value;
             GameObject newButton = Instantiate (buttonPrefab);
 
             CharacterInspectorButton butt = newButton.GetComponent<CharacterInspectorButton> ();

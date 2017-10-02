@@ -12,9 +12,6 @@ public class WeaponSpawn : EquippedItem {
         Weapon w = wep.GetComponent<Weapon> ();
         if (message.character) {
             w.character = message.character;
-            CharacterEquipment.Slot slot = message.character.FindSlotByType (CharacterEquipment.Slot.Ammo);
-            if (slot != null)
-                w.characterAmmoSlot = slot.item;
 
             if (message.slot != null)
                 message.slot.equippedItem = gameObject;

@@ -271,7 +271,7 @@ public class CharacterAI : MonoBehaviour {
     IEnumerator DoKillCommand () {
         // Search for the character object in the target, and find his chest.
         Character targetChar = currentCommand.target.GetComponent<Character> ();
-        Transform target = targetChar.FindSlotByType (CharacterEquipment.Slot.Chest).transform;
+        Transform target = targetChar.FindSlotByType (CharacterEquipment.Type.Chest).transform;
 
         FindPathToCommand ();
         while (targetChar) {
@@ -310,7 +310,7 @@ public class CharacterAI : MonoBehaviour {
     IEnumerator DoExecuteCommand () {
         // Search for the character object in the target, and find his head.
         Character targetChar = currentCommand.target.GetComponent<Character> ();
-        Transform target = targetChar.FindSlotByType (CharacterEquipment.Slot.Head).transform;
+        Transform target = targetChar.FindSlotByType (CharacterEquipment.Type.Head).transform;
 
         FindPathToCommand ();
 

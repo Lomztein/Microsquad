@@ -77,6 +77,7 @@ public class Inventory : MonoBehaviour {
 
         public Item item;
         public int count;
+        public Type lockedType;
 
         public GameObject inventoryButton;
 

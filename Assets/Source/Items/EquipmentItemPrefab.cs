@@ -4,13 +4,13 @@ using UnityEngine;
 
 public class EquipmentItemPrefab : ItemPrefab, IEquipable {
 
-    public CharacterEquipment.Slot slot;
+    public CharacterEquipment.Type slot;
 
     public GameObject GetEquipmentObject() {
         return gameObject;
     }
 
-    public CharacterEquipment.Slot GetSlotType() {
+    public CharacterEquipment.Type GetSlotType() {
         return slot;
     }
 }

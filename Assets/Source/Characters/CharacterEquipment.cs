@@ -87,15 +87,12 @@ public class CharacterEquipment {
     public class Human : CharacterEquipment {
 
         public Human(Character character) {
-            slots.Add ("Right Hand", Type.Head, true, true, InspectorSide.Left, character);
-            Slot chest = new Slot ("Right Hand", Type.Chest, true, true, InspectorSide.Right, character);
+            slots.Add ("Right Hand", new Slot ("Right Hand", Type.Hand, true, true, InspectorSide.Left, character));
+            slots.Add ("Left Hand", new Slot ("Left Hand", Type.Hand, true, true, InspectorSide.Left, character));
 
-
-            Slot rightHand = new Slot ("Right Hand", Type.Hand, true, true, InspectorSide.Right, character);
-            Slot leftHand = new Slot ("Left Hand", Type.Hand, true, true, InspectorSide.Left, character);
-
+            slots.Add ("Head", new Slot ("Head", Type.Head, true, true, InspectorSide.Right, character));
+            slots.Add ("Chest", new Slot ("Chest", Type.Chest, true, true, InspectorSide.Right, character));
+            slots.Add ("Legs", new Slot ("Legs", Type.Legs, true, true, InspectorSide.Right, character));
         }
-
-
     }
 }

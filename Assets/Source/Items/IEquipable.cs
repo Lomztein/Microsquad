@@ -6,6 +6,6 @@ public interface IEquipable {
 
     GameObject GetEquipmentObject();
 
-    CharacterEquipment.Slot GetSlotType();
+    CharacterEquipment.Type GetSlotType();
 
 }

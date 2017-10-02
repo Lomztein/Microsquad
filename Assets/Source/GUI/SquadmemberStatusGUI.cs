@@ -12,8 +12,6 @@ public class SquadmemberStatusGUI : MonoBehaviour {
     public RawImage squadmemberWeapon;
     public Text ammoText;
 
-    private CharacterEquipment.Slot ammoSlot;
-
     public void UpdateAll () {
         UpdateStatus ();
         UpdateWeapon ();
@@ -47,7 +45,7 @@ public class SquadmemberStatusGUI : MonoBehaviour {
     }
 
     public void UpdateWeapon () {
-        CharacterEquipment.Slot weaponSlot = squadmember.FindSlotByType (CharacterEquipment.Slot.Hand);
+        CharacterEquipment.Slot weaponSlot = squadmember.FindSlotByType (CharacterEquipment.Type.Hand);
         if (weaponSlot.item.item) {
             squadmemberWeapon.gameObject.SetActive (true);
             squadmemberWeapon.texture = weaponSlot.item.item.GetIcon ();
@@ -58,10 +56,9 @@ public class SquadmemberStatusGUI : MonoBehaviour {
 
     public void UpdateAmmo () {
         if (squadmember.activeWeapon) {
-            if (ammoSlot == null)
-                ammoSlot = squadmember.FindSlotByType (CharacterEquipment.Slot.Ammo);
+            int count = squadmember.activeWeapon.Slot.count;
 
-            ammoText.text = ammoSlot.item.count + "\n/" + squadmember.activeWeapon.body.magazine.maxAmmo;
+            ammoText.text = count + "\n/" + squadmember.activeWeapon.body.magazine.maxAmmo;
         } else {
             ammoText.text = "";
         }
