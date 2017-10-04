@@ -78,6 +78,7 @@ public class Inventory : MonoBehaviour {
         public Item item;
         public int count;
         public Type lockedType;
+        public int maxItems = int.MaxValue;
 
         public GameObject inventoryButton;
 
@@ -122,13 +123,18 @@ public class Inventory : MonoBehaviour {
             int otherCount = newSlot.count;
 
             if (transferCount == -1)
-                transferCount = count;
+                transferCount = Mathf.Min (count, newSlot.maxItems);
+
+            if (item && newSlot.lockedType != null && !newSlot.lockedType.IsInstanceOfType (item.prefab)) {
+                return;
+            }
 
             if (Item.Equals (item, otherItem)) {
 
                 // Both sides have items, are the same item and metadata.
                 int total = otherCount + transferCount;
-                int max = item.prefab.maxStack;
+                int max = Mathf.Min (item.prefab.maxStack, maxItems);
+                Debug.Log (total + ", " + max);
 
                 if (total <= max) {
                     newSlot.ChangeCount (transferCount);

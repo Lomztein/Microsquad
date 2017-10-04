@@ -1,16 +1,9 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class WeaponItemPrefab : ItemPrefab, IEquipable, IContainsItem {
+public class WeaponItemPrefab : ItemPrefab, IEquipable {
 
     public CharacterEquipment.Type type = CharacterEquipment.Type.Hand;
-    public Inventory.Slot slot;
-
-    public Inventory.Slot Slot {
-        get {
-            return slot;
-        }
-    }
 
     public GameObject GetEquipmentObject() {
         return gameObject;
@@ -18,5 +11,11 @@ public class WeaponItemPrefab : ItemPrefab, IEquipable, IContainsItem {
 
     public CharacterEquipment.Type GetSlotType() {
         return type;
+    }
+
+    public override Item GetItem() {
+        Item baseItem = base.GetItem ();
+        baseItem.attributes.AddAttribute ("AmmoSlot", Inventory.Slot.CreateSlot ());
+        return baseItem;
     }
 }

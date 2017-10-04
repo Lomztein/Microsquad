@@ -57,7 +57,7 @@ public class Character : Unit {
 
         armorPieces = new List<Armor> ();
         foreach (CharacterEquipment.Slot e in equipment.slots.Values) {
-            e.item = Inventory.Slot.CreateSlot ();
+            e.slot = Inventory.Slot.CreateSlot ();
             e.character = this;
             e.Update ();
         }
@@ -92,8 +92,8 @@ public class Character : Unit {
                 return;
         }
 
-        slot.item.ForceButtonUpdate ();
-        fromSlot.MoveItem (slot.item);
+        slot.slot.ForceButtonUpdate ();
+        fromSlot.MoveItem (slot.slot);
         UpdateItem (slot);
 
         SendMessage ("OnEquipmentChanged", SendMessageOptions.DontRequireReceiver);
@@ -212,7 +212,7 @@ public class Character : Unit {
 
     void DropLooseEquipment() {
         foreach (CharacterEquipment.Slot e in equipment.slots.Values) {
-            if (e.item.item && e.dropOnDeath) {
+            if (e.slot.item && e.dropOnDeath) {
                 Game.game.StartCoroutine (e.Drop (0.1f));
             }
         }

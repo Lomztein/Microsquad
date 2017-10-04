@@ -10,6 +10,17 @@ public class WeaponSpawn : EquippedItem {
 		wep.transform.parent = transform;
 
         Weapon w = wep.GetComponent<Weapon> ();
+
+        if (message.attributes != null) {
+        w.ammoSlot = Inventory.Slot.CreateSlot ();
+        w.ammoSlot.lockedType = typeof (IAmmo);
+        w.ammoSlot.maxItems = w.body.magazine.maxAmmo;
+
+        Inventory.Slot itemSlot = message.attributes.GetAttribute<Inventory.Slot> ("AmmoSlot");
+
+        itemSlot.MoveItem (w.ammoSlot);
+        }
+
         if (message.character) {
             w.character = message.character;
 

@@ -31,12 +31,12 @@ public class CharacterInspectorButton : MonoBehaviour {
     void UpdateButton () {
         text.text = "";
 
-        if (equipment.item.item) {
-            image.texture = equipment.item.item.GetIcon ();
-            if (equipment.item.count > 1) {
-                text.text = equipment.item.count.ToString ();
+        if (equipment.slot.item) {
+            image.texture = equipment.slot.item.GetIcon ();
+            if (equipment.slot.count > 1) {
+                text.text = equipment.slot.count.ToString ();
             }
-            element.text = equipment.name.ToString () + " - " + equipment.item.ToString ();
+            element.text = equipment.name.ToString () + " - " + equipment.slot.ToString ();
         } else {
             image.texture = defaultIcon;
             element.text = equipment.name.ToString ();

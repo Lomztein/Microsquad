@@ -46,9 +46,9 @@ public class SquadmemberStatusGUI : MonoBehaviour {
 
     public void UpdateWeapon () {
         CharacterEquipment.Slot weaponSlot = squadmember.FindSlotByType (CharacterEquipment.Type.Hand);
-        if (weaponSlot.item.item) {
+        if (weaponSlot.slot.item) {
             squadmemberWeapon.gameObject.SetActive (true);
-            squadmemberWeapon.texture = weaponSlot.item.item.GetIcon ();
+            squadmemberWeapon.texture = weaponSlot.slot.item.GetIcon ();
         }else {
             squadmemberWeapon.gameObject.SetActive (false);
         }

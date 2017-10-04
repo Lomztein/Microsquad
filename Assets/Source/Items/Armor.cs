@@ -10,6 +10,7 @@ public class Armor : EquippedItem {
     public float hardness;
 
     public void OnEquip (CharacterEquipment.Slot.EquipMessage message) {
+        if (message.character)
         message.character.armorPieces.Add (this);
     }
 

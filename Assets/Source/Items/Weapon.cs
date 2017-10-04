@@ -103,7 +103,20 @@ public class Weapon : MonoBehaviour, IContainsItem {
         // When the weapon needs to reload, it first searches its parent character for an ammo slot.
         // If no ammo slot is found, it simply reloads all bullets, so that certain characters can have infinite ammo if needed.
 
+        if (character.inventory) {
+            for (int i = 0; i < character.inventory.size; i++) {
+                Inventory.Slot slot = character.inventory.slots [ i ];
+                if (slot.item) {
 
+                    IAmmo ammo = slot.item.prefab as IAmmo;
+                    if (ammo != null) {
+                        if (ammo.GetAmmoType () == body.ammoType) {
+                            slot.MoveItem (Slot);
+                        }
+                    }
+                }
+            }
+        }
 
         isReloading = false;
         chambered = true;

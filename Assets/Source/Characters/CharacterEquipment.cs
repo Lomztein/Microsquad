@@ -18,7 +18,7 @@ public class CharacterEquipment {
 
         public string name;
         public Type type;
-        public Inventory.Slot item;
+        public Inventory.Slot slot;
         public GameObject equippedItem;
         public Transform transform;
 
@@ -32,17 +32,19 @@ public class CharacterEquipment {
 
         public Slot(string _name, Type _type, bool _dropOnDeath, bool _spawnOnEquip, InspectorSide _side, Character _character) {
             name = _name; type = _type; dropOnDeath = _dropOnDeath; spawnOnEquip = _spawnOnEquip; side = _side; character = _character;
+            slot = Inventory.Slot.CreateSlot ();
         }
 
         public virtual void Update() {
             if (equippedItem) {
-                equippedItem.SendMessage ("OnUnEquip", new EquipMessage (character, "", this), SendMessageOptions.DontRequireReceiver);
+                equippedItem.SendMessage ("OnUnEquip", new EquipMessage (character, "", this, null), SendMessageOptions.DontRequireReceiver);
                 character.OnDeEquip ();
                 Object.Destroy (equippedItem);
             }
 
-            if (spawnOnEquip && item && item.item) {
-                GameObject newTool = (GameObject)Object.Instantiate (item.item.prefab.gameObject, transform.position, transform.rotation);
+            if (spawnOnEquip && slot && slot.item) {
+                IEquipable equipable = slot.item.prefab as IEquipable;
+                GameObject newTool = Object.Instantiate (equipable.GetEquipmentObject (), transform.position, transform.rotation);
 
                 newTool.transform.position = transform.position;
                 newTool.transform.rotation = transform.rotation;
@@ -50,7 +52,7 @@ public class CharacterEquipment {
 
                 equippedItem = newTool;
 
-                newTool.SendMessage ("OnEquip", new EquipMessage (character, item.item.metadata, this));
+                newTool.SendMessage ("OnEquip", new EquipMessage (character, slot.item.metadata, this, slot.item.attributes));
                 character.OnEquip (this, newTool);
             }
         }
@@ -59,13 +61,13 @@ public class CharacterEquipment {
             yield return new WaitForSeconds (waitTime);
 
             Rigidbody body = transform.GetComponentInParent<Rigidbody> ();
-            GameObject pItem = PhysicalItem.Create (item.item, item.count, transform.position, transform.rotation).gameObject;
+            GameObject pItem = PhysicalItem.Create (slot.item, slot.count, transform.position, transform.rotation).gameObject;
             Rigidbody drop = pItem.GetComponent<Rigidbody> ();
 
             drop.velocity = body.velocity;
             drop.angularVelocity = body.angularVelocity;
 
-            item = null;
+            slot = null;
             Update ();
         }
 
@@ -74,25 +76,38 @@ public class CharacterEquipment {
             public Character character;
             public string metadata;
             public Slot slot;
+            public ObjectAttribute attributes;
 
-            public EquipMessage(Character ch, string me, Slot sl) {
+            public EquipMessage(Character ch, string me, Slot sl, ObjectAttribute _attributes) {
                 character = ch;
                 metadata = me;
                 slot = sl;
+                attributes = _attributes;
             }
 
         }
     }
 
+    [System.Serializable]
     public class Human : CharacterEquipment {
 
-        public Human(Character character) {
-            slots.Add ("Right Hand", new Slot ("Right Hand", Type.Hand, true, true, InspectorSide.Left, character));
-            slots.Add ("Left Hand", new Slot ("Left Hand", Type.Hand, true, true, InspectorSide.Left, character));
+        public Slot rightHand = new Slot("Right Hand", Type.Hand, true, true, InspectorSide.Left, null);
+        public Slot leftHand = new Slot ("Left Hand", Type.Hand, true, true, InspectorSide.Left, null);
+        public Slot head = new Slot ("Head", Type.Head, true, true, InspectorSide.Right, null);
+        public Slot chest = new Slot ("Chest", Type.Chest, true, true, InspectorSide.Right, null);
+        public Slot legs = new Slot ("Legs", Type.Legs, true, true, InspectorSide.Right, null);
 
-            slots.Add ("Head", new Slot ("Head", Type.Head, true, true, InspectorSide.Right, character));
-            slots.Add ("Chest", new Slot ("Chest", Type.Chest, true, true, InspectorSide.Right, character));
-            slots.Add ("Legs", new Slot ("Legs", Type.Legs, true, true, InspectorSide.Right, character));
+        public Human(Character character) {
+            slots.Add (rightHand.name, rightHand);
+            slots.Add (leftHand.name, leftHand);
+            slots.Add (head.name, head);
+            slots.Add (chest.name, chest);
+            slots.Add (legs.name, legs);
+
+            foreach (var value in slots.Values) {
+                value.character = character;
+                value.transform = character.transform.Find ("Rig").Find ("hips");
+            }
         }
     }
 }
